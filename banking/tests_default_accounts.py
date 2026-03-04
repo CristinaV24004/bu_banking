@@ -80,7 +80,7 @@ class UserRegistrationAPITestCase(APITestCase):
         User.objects.create_user(username='existinguser', password='password123')
         
         # Try to register with the same username
-        url = reverse('user-registration')
+        url = reverse('simple-registration')
         data = {
             'username': 'existinguser',
             'password': 'newpassword'

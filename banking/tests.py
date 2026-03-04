@@ -19,6 +19,7 @@ class BankingAPITestCase(APITestCase):
         # Set up test data
         self.account = Account.objects.create(
             id="3ac94f73-ee6a-473a-ad35-c36164229144",
+            user=self.user,
             name="Test User",
             starting_balance=Decimal('1000.00'),
             round_up_enabled=True
@@ -119,7 +120,7 @@ class BankingAPIManagerTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_get_user_account(self):
-        url = reverse('account-user-account', args=[self.account.id])
+        url = reverse('account-detail', args=[self.account.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.account.name)
