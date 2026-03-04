@@ -132,6 +132,27 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'], url_path='current-balance')
+    def current_balance(self, request, pk=None):
+        # Get the current balance for a specific account
+        try:
+            account = Account.objects.get(id=pk)
+            
+            # Check if the user has permission to access this account
+            if account.user != request.user and not request.user.is_staff:
+                return Response({"detail": "You don't have permission to access this account"}, 
+                               status=status.HTTP_403_FORBIDDEN)
+                
+            # Calculate current balance based on transactions
+            transactions = Transaction.objects.filter(from_account=account)
+            total_spent = transactions.filter(transaction_type="payment").aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            total_received = transactions.filter(transaction_type="deposit").aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            current_balance = account.starting_balance + total_received - total_spent
+            
+            return Response({"current_balance": str(current_balance)})
+        except Account.DoesNotExist:
+            return Response({"detail": "Account not found"}, status=status.HTTP_404_NOT_FOUND)
+
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     
