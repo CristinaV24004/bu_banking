@@ -4,11 +4,16 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Account, Transaction, Business
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
 from decimal import Decimal
 import uuid
 
 class UserAccountTestCase(APITestCase):
     def setUp(self):
+        # Disconnect the auto-account-creation signal so it doesn't pollute counts
+        from .signals import create_default_accounts
+        post_save.disconnect(create_default_accounts, sender=User)
+
         # Create test users
         self.regular_user = User.objects.create_user(
             username="regular_user", 
@@ -22,6 +27,9 @@ class UserAccountTestCase(APITestCase):
             email="staff@example.com", 
             is_staff=True
         )
+
+        # Reconnect the signal after user creation
+        post_save.connect(create_default_accounts, sender=User)
         
         # Create accounts
         self.user_account = Account.objects.create(
@@ -88,6 +96,4 @@ class UserAccountTestCase(APITestCase):
         
         # Verify status code and that all accounts are returned
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)  # All three accounts
-        
- 
+        self.assertEqual(len(response.data), 3)  # All three accountss

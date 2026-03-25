@@ -38,7 +38,7 @@ class UserRegistrationView(APIView):
             )
         
         try:
-            # Create the user
+            # Create the user — signal will automatically create Current + Savings accounts
             user = User.objects.create_user(
                 username=username,
                 password=password,
@@ -46,42 +46,21 @@ class UserRegistrationView(APIView):
                 first_name=first_name,
                 last_name=last_name
             )
-            
-            # Create default Current Account with 1000 starting balance
-            current_account = Account.objects.create(
-                name=f"{first_name or username}'s Current Account",
-                starting_balance=Decimal('1000.00'),
-                round_up_enabled=False,
-                user=user,
-                account_type='current'
-            )
-            
-            # Create default Savings Account with 0 starting balance
-            savings_account = Account.objects.create(
-                name=f"{first_name or username}'s Savings Account",
-                starting_balance=Decimal('0.00'),
-                round_up_enabled=True,  # Enable round-up for savings by default
-                user=user,
-                account_type='savings'
-            )
-            
-            # Return success response with account details
+
+            # Fetch the accounts created by the signal
+            accounts = Account.objects.filter(user=user)
+
             return Response({
                 "message": "User registered successfully",
                 "user_id": user.id,
                 "accounts": [
                     {
-                        "id": str(current_account.id),
-                        "name": current_account.name,
-                        "type": current_account.get_account_type_display(),
-                        "balance": str(current_account.starting_balance)
-                    },
-                    {
-                        "id": str(savings_account.id),
-                        "name": savings_account.name,
-                        "type": savings_account.get_account_type_display(),
-                        "balance": str(savings_account.starting_balance)
+                        "id": str(acc.id),
+                        "name": acc.name,
+                        "type": acc.get_account_type_display(),
+                        "balance": str(acc.starting_balance)
                     }
+                    for acc in accounts
                 ]
             }, status=status.HTTP_201_CREATED)
             
@@ -173,18 +152,23 @@ class AccountViewSet(viewsets.ModelViewSet):
         
     @action(detail=True, methods=['get'], url_path='roundups')
     def roundups(self, request, pk=None):
-        # Get round-up transactions for a specific account
+        # Get round-up summary for a specific account
         try:
             account = Account.objects.get(id=pk)
-            
+
             # Check if the user has permission to access this account
             if account.user != request.user and not request.user.is_staff:
-                return Response({"detail": "You don't have permission to access this account"}, 
+                return Response({"detail": "You don't have permission to access this account"},
                                status=status.HTTP_403_FORBIDDEN)
-                
-            roundups = Transaction.objects.filter(from_account=account, transaction_type="roundup")
-            serializer = TransactionSerializer(roundups, many=True)
-            return Response(serializer.data)
+
+            roundup_transactions = Transaction.objects.filter(from_account=account, transaction_type="collect_roundup")
+            total_roundups = roundup_transactions.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+            return Response({
+                "savings": str(account.round_up_pot),
+                "total_collected": str(total_roundups),
+                "round_up_enabled": account.round_up_enabled,
+            })
         except Account.DoesNotExist:
             return Response({"detail": "Account not found"}, status=status.HTTP_404_NOT_FOUND)
         
