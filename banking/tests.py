@@ -19,6 +19,7 @@ class BankingAPITestCase(APITestCase):
         # Set up test data
         self.account = Account.objects.create(
             id="3ac94f73-ee6a-473a-ad35-c36164229144",
+            user=self.user,
             name="Test User",
             starting_balance=Decimal('1000.00'),
             round_up_enabled=True
@@ -89,6 +90,7 @@ class BankingAPITestCase(APITestCase):
 
     def test_update_business_sanction_status(self):
         # Test updating the sanction status of a business
+        self.client.force_authenticate(user=User.objects.create_user(username='adminuser', password='password', is_staff=True))
         url = reverse('business-detail', args=[self.business.id])
         data = {
             "sanctioned": True
@@ -108,7 +110,7 @@ class BankingAPIManagerTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(self.user).access_token))
 
         # Create account and business with valid UUID for account id
-        self.account = Account.objects.create(id=uuid.uuid4(), name="User Account", starting_balance=Decimal('1000.00'), round_up_enabled=True)
+        self.account = Account.objects.create(id=uuid.uuid4(), name="User Account", starting_balance=Decimal('1000.00'), round_up_enabled=True, user=self.user)
         self.business = Business.objects.create(id="kfc", name="KFC", category="Food", sanctioned=False)
         self.transaction = Transaction.objects.create(transaction_type="payment", amount=Decimal('50.00'), from_account=self.account, to_account=self.account)
 
@@ -119,7 +121,7 @@ class BankingAPIManagerTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_get_user_account(self):
-        url = reverse('account-user-account', args=[self.account.id])
+        url = reverse('account-detail', args=[self.account.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.account.name)
@@ -149,7 +151,7 @@ class BankingAPITestCase3(APITestCase):
         self.user = User.objects.create_user(username="testuser", password="password")
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + str(RefreshToken.for_user(self.user).access_token))
 
-        self.account = Account.objects.create(id=uuid.uuid4(), name="User Account", starting_balance=Decimal('1000.00'), round_up_enabled=True)
+        self.account = Account.objects.create(id=uuid.uuid4(), name="User Account", starting_balance=Decimal('1000.00'), round_up_enabled=True, user=self.user)
         self.business = Business.objects.create(id="kfc", name="KFC", category="Food", sanctioned=True)
         self.transaction = Transaction.objects.create(transaction_type="payment", amount=Decimal('50.00'), from_account=self.account, to_account=self.account)
     def test_enable_roundup(self):
@@ -166,9 +168,8 @@ class BankingAPITestCase3(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_top_10_spenders(self):
+        self.client.force_authenticate(user=User.objects.create_user(username='adminuser2', password='password', is_staff=True))
         url = reverse('transaction-top-10-spenders')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)     
 
-#
-#ENDTASK5        
