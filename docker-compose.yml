@@ -1,0 +1,9 @@
+services:
+  banking-app:
+    build: .
+    image: banking
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    restart: "no"

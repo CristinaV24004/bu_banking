@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Jenkins: the CI/CD server that will build your image when changes are merged.
   jenkins:
