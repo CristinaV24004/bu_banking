@@ -1,12 +1,12 @@
-"""
-URLs for the banking app with additional diagnostic endpoints.
-"""
+# URLs for the banking app with additional diagnostic endpoints.
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .views import AccountViewSet, TransactionViewSet, BusinessViewSet, UserRegistrationView
 from .test_view import TestView
+from .views import GuardianViewSet
 import logging
 import traceback
 
@@ -22,13 +22,14 @@ router = DefaultRouter()
 router.register(r'accounts', AccountViewSet, basename='account')
 router.register(r'transactions', TransactionViewSet, basename='transaction')
 router.register(r'businesses', BusinessViewSet)
+router.register(r'guardian', GuardianViewSet, basename='guardian')
 
 urlpatterns = [
     path('', include(router.urls)),
     # Test routing with very simple views# In banking/urls.py
     path('register/', UserRegistrationView.as_view(), name='user-registration'),
     path('simple-register/', UserRegistrationView.as_view(), name='simple-registration'), 
-    path('test-view/', TestView.as_view(), name='banking-test-view'),
+    path('test-view/', TestView.as_view(), name='banking-test-view')
 ]
 
 #TASK1 Add swagger

@@ -1,32 +1,59 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
-from .models import Account
+from django.utils import timezone
 from decimal import Decimal
 
+# Absolute imports to ensure clarity
+from banking.models import Account
+from banking.guardian_models import UserProfile, SafeSpendLimit
+
 @receiver(post_save, sender=User)
-def create_default_accounts(sender, instance, created, **kwargs):
-    """
-    Signal to create default Current and Savings accounts when a new user is created.
-    Only runs when a new user is created (not on updates).
-    """
+def initialize_user_banking_and_governance(sender, instance, created, **kwargs):
+    #BAJPM-25: Combined signal to handle both Standard Banking setup and Guardian Vault Governance setup.
+    
+    # 1. GOVERNANCE SETUP: Always ensure a UserProfile exists (Safety Net)
+    # We use get_or_create so it works for new users AND old users
+    profile, profile_created = UserProfile.objects.get_or_create(
+        user=instance,
+        defaults={
+            'is_guardian': False,
+            'is_account_holder': True
+        }
+    )
+
+    # 2. NEW USER SETUP: Accounts & Limits
     if created:
-        # Check if the user already has accounts (to prevent duplicates)
+        # A. Create Default Bank Accounts
         if not Account.objects.filter(user=instance).exists():
-            # Create Current Account
+            # Current Account
             Account.objects.create(
+                user=instance,
                 name=f"{instance.first_name or instance.username}'s Current Account",
                 starting_balance=Decimal('1000.00'),
-                round_up_enabled=False,
-                user=instance,
-                account_type='current'
+                account_type='current',
+                round_up_enabled=False
             )
             
-            # Create Savings Account
+            # Savings Account
             Account.objects.create(
+                user=instance,
                 name=f"{instance.first_name or instance.username}'s Savings Account",
                 starting_balance=Decimal('0.00'),
-                round_up_enabled=True,  # Enable round-up for savings by default
-                user=instance,
-                account_type='savings'
+                account_type='savings',
+                round_up_enabled=True
+            )
+
+        # B. Create SafeSpendLimit (Only for Account Holders)
+        if profile.is_account_holder:
+            SafeSpendLimit.objects.get_or_create(
+                account_holder=instance,
+                defaults={
+                    'daily_limit': Decimal('100.00'),
+                    'daily_spent': Decimal('0.00'),
+                    'last_reset_date': timezone.now().date(),
+                    'allow_late_night': False,
+                    'quiet_hours_start': 22,
+                    'quiet_hours_end': 6
+                }
             )
