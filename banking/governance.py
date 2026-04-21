@@ -1,5 +1,5 @@
 """
-BAJPM-26: Permission Engine for Guardian Vault
+Permission Engine for Guardian Vault
 The "Brain" that evaluates if a transaction is safe, risky, or forbidden.
 """
 
@@ -52,22 +52,32 @@ class PermissionEngine:
         return False, None
 
     def _check_merchant_rules(self):
-        # Gate 2: Merchant Whitelist/Blacklist.
-        try:
-            rule = MerchantWhitelist.objects.get(
-                account_holder=self.user,
-                merchant_name__iexact=self.merchant_name
-            )
-            
-            mapping = {
-                'block': ('REJECTED', f'Merchant {self.merchant_name} is restricted.'),
-                'allow': ('APPROVED', f'Trusted merchant: {self.merchant_name}'),
-                'require_approval': ('PENDING', f'Guardian review required for {self.merchant_name}')
-            }
-            return mapping.get(rule.rule_type, (None, None))
-            
-        except MerchantWhitelist.DoesNotExist:
-            return None, None
+        """Gate 2: Merchant Whitelist/Blacklist with Fuzzy Matching (BAJPM-31)."""
+        # Fetch all rules for this user to check them one by one
+        rules = MerchantWhitelist.objects.filter(account_holder=self.user)
+        
+        # Track the result (defaults to None if no rules match)
+        final_decision = None
+        final_reason = None
+
+        for rule in rules:
+            # The Fuzzy Check: Is the whitelisted name (e.g. 'Tesco') contained within the incoming name (e.g. 'TESCO EXPRESS')?
+            if rule.merchant_name.lower() in self.merchant_name.lower():
+                mapping = {
+                    'block': ('REJECTED', f'Merchant {self.merchant_name} is restricted.'),
+                    'allow': ('APPROVED', f'Trusted merchant: {self.merchant_name}'),
+                    'require_approval': ('PENDING', f'Guardian review required for {self.merchant_name}')
+                }
+                
+                decision, reason = mapping.get(rule.rule_type, (None, None))
+                
+                # 'block' always takes priority. If we find a block, stop and return it.
+                if decision == 'REJECTED':
+                    return decision, reason
+                
+                final_decision, final_reason = decision, reason
+                
+        return final_decision, final_reason
 
     def _check_spend_limits(self):
         # Gate 3: Daily Spend Limits.

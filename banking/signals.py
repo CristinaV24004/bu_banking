@@ -7,6 +7,7 @@ from decimal import Decimal
 # Absolute imports to ensure clarity
 from banking.models import Account
 from banking.guardian_models import UserProfile, SafeSpendLimit
+from .models import PendingTransaction
 
 @receiver(post_save, sender=User)
 def initialize_user_banking_and_governance(sender, instance, created, **kwargs):

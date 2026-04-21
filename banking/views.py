@@ -20,7 +20,8 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 # Models & Serializers
 from .models import Account, Transaction, Business
 from .serializers import AccountSerializer, TransactionSerializer, BusinessSerializer
-from .guardian_models import SafeSpendLimit, PendingTransaction, UserProfile, MerchantWhitelist
+from .guardian_models import SafeSpendLimit, UserProfile, MerchantWhitelist
+from .models import PendingTransaction
 from .governance import check_transaction
 
 class UserRegistrationView(APIView):
@@ -60,9 +61,24 @@ class AccountViewSet(viewsets.ModelViewSet):
     serializer_class = AccountSerializer
 
     def get_queryset(self):
-        if self.request.user.is_staff:
-            return Account.objects.all()
-        return Account.objects.filter(user=self.request.user)
+        """Return transactions for accounts owned by the user."""
+        user = self.request.user
+
+        # 1. If the user is a 'Nobody' (Anonymous), stop immediately.
+        if not user or not user.is_authenticated or user.is_anonymous:
+            return Transaction.objects.none()
+
+        # 2. Staff see everything
+        if user.is_staff:
+            return Transaction.objects.all()
+
+        # 3. Regular users see only their own transactions
+        # We wrap this in a try/except just in case the database still gets confused
+        try:
+            user_accounts = Account.objects.filter(user=user)
+            return Transaction.objects.filter(from_account__in=user_accounts)
+        except (TypeError, ValueError):
+            return Transaction.objects.none()
     
     def get_permissions(self):
         user_actions = [

@@ -6,7 +6,7 @@ from django.utils import timezone
 from decimal import Decimal
 
 class UserProfile(models.Model):
-    # BAJPM-20: Governance profile. Links the Guardian to the Account Holder.
+    # Governance profile. Links the Guardian to the Account Holder.
     user = models.OneToOneField(
         User, 
         on_delete=models.CASCADE, 
@@ -43,7 +43,7 @@ class UserProfile(models.Model):
 
 
 class SafeSpendLimit(models.Model):
-    # BAJPM-21: The Daily Autonomy Engine.
+    # The Daily Autonomy Engine.
     
     account_holder = models.OneToOneField(
         User, 
@@ -55,7 +55,7 @@ class SafeSpendLimit(models.Model):
     daily_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     last_reset_date = models.DateField(default=timezone.now)
     
-    # BAJPM-28: Quiet Hours (Sundowning Protection)
+    # Quiet Hours (Sundowning Protection)
     allow_late_night = models.BooleanField(default=False)
     quiet_hours_start = models.IntegerField(default=22, validators=[MinValueValidator(0), MaxValueValidator(23)])
     quiet_hours_end = models.IntegerField(default=6, validators=[MinValueValidator(0), MaxValueValidator(23)])
@@ -71,7 +71,7 @@ class SafeSpendLimit(models.Model):
 
 
 class MerchantWhitelist(models.Model):
-    #BAJPM-22: Trusted Merchant logic.
+    #Trusted Merchant logic.
     
     RULE_TYPES = [
         ('allow', 'Always Allow'),
@@ -86,28 +86,3 @@ class MerchantWhitelist(models.Model):
 
     class Meta:
         unique_together = ['account_holder', 'merchant_name']
-
-
-class PendingTransaction(models.Model):
-    #BAJPM-23: Shared Governance Queue.
-    
-    STATUS_CHOICES = [
-        ('pending', 'Pending Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ]
-    
-    account_holder = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pending_transactions')
-    guardian = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='reviews_assigned')
-    
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    merchant_name = models.CharField(max_length=255)
-    
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    reason_flag = models.CharField(max_length=100)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    guardian_notes = models.TextField(blank=True)
-
-    def __str__(self):
-        return f"£{self.amount} for {self.account_holder.username} ({self.status})"
