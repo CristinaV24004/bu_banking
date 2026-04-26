@@ -25,7 +25,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = ['id', 'transaction_type', 'amount', 'from_account', 'to_account', 'business', 'timestamp',        # Internal fields 
-                  'external_id', 'payment_status', 'gateway_name','gateway_error_code', 'gateway_error_message'     # External integration fields
+                  'external_id', 'payment_status'                                        # External integration fields
                   ]
 
 class BusinessSerializer(serializers.ModelSerializer):
@@ -40,7 +40,7 @@ class PendingTransactionSerializer(serializers.ModelSerializer):
             'id', 'account_holder', 'guardian', 'amount', 'merchant_name',
             'status', 'reason_flag', 'created_at', 'guardian_notes',
             # New external integration fields
-            'external_id', 'payment_status', 'gateway_name',
+            'external_id', 'payment_status',
             'pre_authorization_id', 'pre_authorization_expires_at'
         ]
-        read_only_fields = ['external_id', 'gateway_response', 'payment_status']
+        read_only_fields = ['external_id', 'gateway_response', 'gateway_name', 'payment_status']

@@ -1,21 +1,28 @@
+"""
+Unified User Onboarding Signal.
+Automatically provisions accounts and governance profiles for new users.
+"""
+
+from decimal import Decimal
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
-from decimal import Decimal
 
-# Absolute imports to ensure clarity
+# Absolute imports for model clarity
 from banking.models import Account
 from banking.guardian_models import UserProfile, SafeSpendLimit
-from .models import PendingTransaction
 
 @receiver(post_save, sender=User)
 def initialize_user_banking_and_governance(sender, instance, created, **kwargs):
-    #BAJPM-25: Combined signal to handle both Standard Banking setup and Guardian Vault Governance setup.
+    """
+    Combined signal to handle both Standard Banking setup and 
+    Guardian Vault Governance setup on User creation.
+    """
     
     # 1. GOVERNANCE SETUP: Always ensure a UserProfile exists (Safety Net)
-    # We use get_or_create so it works for new users AND old users
-    profile, profile_created = UserProfile.objects.get_or_create(
+    # We use '_' for profile_created as it's not needed for the logic below
+    profile, _ = UserProfile.objects.get_or_create(
         user=instance,
         defaults={
             'is_guardian': False,
@@ -23,23 +30,25 @@ def initialize_user_banking_and_governance(sender, instance, created, **kwargs):
         }
     )
 
-    # 2. NEW USER SETUP: Accounts & Limits
+    # 2. NEW USER PROVISIONING
     if created:
         # A. Create Default Bank Accounts
         if not Account.objects.filter(user=instance).exists():
-            # Current Account
+            first_name = instance.first_name or instance.username
+            
+            # Current Account: The primary spending account
             Account.objects.create(
                 user=instance,
-                name=f"{instance.first_name or instance.username}'s Current Account",
+                name=f"{first_name}'s Current Account",
                 starting_balance=Decimal('1000.00'),
                 account_type='current',
                 round_up_enabled=False
             )
             
-            # Savings Account
+            # Savings Account: The target for round-ups
             Account.objects.create(
                 user=instance,
-                name=f"{instance.first_name or instance.username}'s Savings Account",
+                name=f"{first_name}'s Savings Account",
                 starting_balance=Decimal('0.00'),
                 account_type='savings',
                 round_up_enabled=True
