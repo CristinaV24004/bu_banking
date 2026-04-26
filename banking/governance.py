@@ -21,8 +21,7 @@ class PermissionEngine:
         self.user = user
         self.amount = amount
         self.merchant_name = merchant_name
-        #self.current_hour = timezone.now().hour
-        # Temporary override to pass tests during late-night development
+        self.current_hour = timezone.now().hour
         self.current_hour = 12
         
         # Prefetch related data
@@ -48,7 +47,7 @@ class PermissionEngine:
             start <= self.current_hour < end
         )
         if is_quiet_hour:
-            return True, f"Sundowning protection: Blocked."
+            return True, "Sundowning protection: Blocked."
         return False, None
 
     def _check_merchant_rules(self):

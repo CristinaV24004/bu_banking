@@ -14,7 +14,7 @@ class Account(models.Model):
     name = models.CharField(max_length=100)
     starting_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     round_up_enabled = models.BooleanField(default=False)
-    postcode = models.CharField(max_length=10, null=True, blank=True)
+    postcode = models.CharField(max_length=10, blank=True)
     round_up_pot = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts', null=True, blank=True)
     account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPES, default='current')
@@ -49,7 +49,7 @@ class Transaction(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     # NEW FIELDS (External API Prep)
-    merchant_name = models.CharField(max_length=255, null=True, blank=True)
+    merchant_name = models.CharField(max_length=255, blank=True)
     external_id = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
     gateway_response = models.JSONField(null=True, blank=True, default=dict)
     payment_status = models.CharField(max_length=50, default='local_processed')
@@ -75,7 +75,7 @@ class PendingTransaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     # NEW FIELDS (External API Prep)
-    external_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    external_id = models.CharField(max_length=255, blank=True, db_index=True)
     gateway_response = models.JSONField(null=True, blank=True, default=dict)
     payment_status = models.CharField(max_length=50, default='local_pending')
 

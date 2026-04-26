@@ -57,3 +57,6 @@ yarn.lock
 # Ignore temporary files
 *.tmp
 *.swp
+
+# Ignore Windows metadata
+*.Identifier

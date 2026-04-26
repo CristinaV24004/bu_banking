@@ -6,6 +6,5 @@ class BankingConfig(AppConfig):
     verbose_name = 'Guardian Vault Banking System'
     
     def ready(self):
-        # This is the "magic" line that activates BAJPM-25
         import banking.signals
         print("[BankingConfig] ✓ Guardian Vault signals activated")
