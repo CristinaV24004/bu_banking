@@ -1,0 +1,21 @@
+# Ignore Git and IDE metadata
+.git
+.gitignore
+.vscode
+.idea
+.gemini
+
+# Ignore AI/Developer settings
+mcp-servers/
+.env
+*.local
+
+# Ignore Python/Node build artifacts
+__pycache__
+*.pyc
+node_modules
+venv
+.venv
+
+# Ignore logs
+*.log

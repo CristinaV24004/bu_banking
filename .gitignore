@@ -26,6 +26,7 @@ Thumbs.db
 .venv
 *.sublime-workspace
 *.sublime-project
+.gemini/
 
 # Ignore dependency directories for Python projects
 __pycache__/
