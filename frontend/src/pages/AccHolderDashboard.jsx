@@ -1,16 +1,18 @@
-// src/pages/AccHolderDashboard.jsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { axiosInstance } from '../api/axiosInstance';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import SafeSpendWidget from '../components/SafeSpendWidget';
 
 const AccHolderDashboard = () => {
   const { user, logout } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAccountsAndBalances = async () => {
@@ -18,11 +20,9 @@ const AccHolderDashboard = () => {
         setError(null);
         setLoading(true);
 
-        // 1. Fetch all accounts for the logged-in user
         const accountsRes = await axiosInstance.get('/accounts/');
         const accountsData = accountsRes.data;
 
-        // 2. For each account, fetch its current balance
         const accountsWithBalances = await Promise.all(
           accountsData.map(async (account) => {
             try {
@@ -57,8 +57,8 @@ const AccHolderDashboard = () => {
   }, []);
 
   const formatCurrency = (amount) => {
-    const num = parseFloat(amount);
-    if (isNaN(num)) return '£0.00';
+    const num = Number.parseFloat(amount);
+    if (Number.isNaN(num)) return '£0.00';
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: 'GBP',
@@ -90,7 +90,8 @@ const AccHolderDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-4xl">
-        {/* Header with welcome message and logout */}
+
+        {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -140,6 +141,24 @@ const AccHolderDashboard = () => {
             ))}
           </div>
         )}
+
+        <div className="mt-6">
+          <SafeSpendWidget userId={user?.userId} />
+        </div>
+
+        {/* Navigation actions */}
+        <div className="mt-6 flex gap-4">
+          <Button variant="primary" onClick={() => navigate('/transactions')}>
+            View Transactions
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/payment/new')}>
+            Make a Payment
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/pending')}>
+            Pending Approvals
+          </Button>
+        </div>
+
       </div>
     </div>
   );

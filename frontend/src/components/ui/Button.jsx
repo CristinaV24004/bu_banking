@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const Button = ({
   children,
@@ -57,3 +58,13 @@ const Button = ({
 };
 
 export default Button;
+
+Button.propTypes = {
+  children: PropTypes.node.isRequired,
+  onClick: PropTypes.func,
+  variant: PropTypes.oneOf(['primary', 'danger', 'ghost']),
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+  type: PropTypes.oneOf(['button', 'submit', 'reset']),
+  className: PropTypes.string,
+};
