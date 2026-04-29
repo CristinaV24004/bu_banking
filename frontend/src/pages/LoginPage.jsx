@@ -49,7 +49,7 @@ const LoginPage = () => {
       // After successful login, fetch user role to determine redirect
       try {
         const userRes = await axiosInstance.get('/auth/user/');
-        const isGuardian = userRes.data.is_guardian === true;
+        const isGuardian = userRes.data.user.is_guardian === true;
         if (isGuardian) {
           setLoading(false);
           navigate('/guardian');

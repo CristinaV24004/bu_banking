@@ -1,6 +1,6 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { RoleRoute } from './components/RoleRoute';
 
 // Import placeholder page components (defined below)
@@ -14,6 +14,8 @@ import PendingPage from './pages/PendingPage';
 import GuardianApprovalsPage from './pages/GuardianApprovalsPage';
 import GuardianWhitelistPage from './pages/GuardianWhitelistPage';
 import GuardianLimitsPage from './pages/GuardianLimitsPage';
+import NewPaymentPage from './pages/NewPaymentPage';
+import GuardianTransactionsPage from './pages/GuardianTransactionsPage';
 
 function AppRoutes() {
   return (
@@ -46,6 +48,14 @@ function AppRoutes() {
             <RoleRoute requiredRole="account_holder">
               <PendingPage />
             </RoleRoute>
+        }
+      />
+      <Route
+        path="/payment/new"
+        element={
+          <RoleRoute requiredRole="account_holder">
+            <NewPaymentPage />
+          </RoleRoute>
         }
       />
 
@@ -82,9 +92,16 @@ function AppRoutes() {
             </RoleRoute>
         }
       />
-
+      <Route
+        path="/guardian/transactions"
+        element={
+          <RoleRoute requiredRole="guardian">
+            <GuardianTransactionsPage />
+          </RoleRoute>
+        }
+      />
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
@@ -98,5 +115,6 @@ function App() {
     </BrowserRouter>
   );
 }
+
 
 export default App;

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { axiosInstance } from '../api/axiosInstance';
+import PropTypes from 'prop-types';
 
 export const RoleRoute = ({ children, requiredRole }) => {
   const { isAuthenticated, accessToken, loading: authLoading } = useAuth();
@@ -19,9 +20,7 @@ export const RoleRoute = ({ children, requiredRole }) => {
     const fetchUserRole = async () => {
       try {
         const response = await axiosInstance.get('/auth/user/');
-        // Assuming response.data has an 'is_guardian' boolean field
-        // e.g., { id, username, email, is_guardian, is_account_holder, ... }
-        const isGuardian = response.data.is_guardian;
+        const isGuardian = response.data.user?.is_guardian === true;
         const role = isGuardian ? 'guardian' : 'account_holder';
         setUserRole(role);
       } catch (err) {
@@ -52,4 +51,9 @@ export const RoleRoute = ({ children, requiredRole }) => {
   }
 
   return children;
+};
+
+RoleRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+  requiredRole: PropTypes.oneOf(['guardian', 'account_holder']).isRequired,
 };
