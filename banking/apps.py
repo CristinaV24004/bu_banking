@@ -7,4 +7,6 @@ class BankingConfig(AppConfig):
     
     def ready(self):
         import banking.signals
-        print("[BankingConfig] ✓ Guardian Vault signals activated")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("Guardian Vault signals activated")
