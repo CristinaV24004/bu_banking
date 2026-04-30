@@ -6,6 +6,10 @@ services:
       - "8000:8000"
     volumes:
       - ./:/app
-    env_file:        # <-- Add this line
-      - .env         # <-- Add this line
+    env_file:
+      - .env
     restart: "no"
+    command: >
+      sh -c "mkdir -p /app/logs &&
+             touch /app/logs/audit.log &&
+             python manage.py runserver 0.0.0.0:8000"

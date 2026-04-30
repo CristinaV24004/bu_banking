@@ -1,7 +1,3 @@
-"""
-Unified Banking & Guardian API.
-"""
-
 from decimal import Decimal
 from datetime import timedelta
 from django.db import transaction
@@ -20,6 +16,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.decorators import action
 
+import logging
+audit_logger = logging.getLogger('banking.audit')
+
 # Models & Serializers
 from .models import Account, Transaction, Business, PendingTransaction, AnomalyAlert
 from .serializers import AccountSerializer, TransactionSerializer, BusinessSerializer, PendingTransactionSerializer, MerchantWhitelistSerializer
@@ -27,6 +26,7 @@ from .guardian_models import SafeSpendLimit, UserProfile, MerchantWhitelist
 from .governance import check_transaction
 from .services import execute_pending_approval_flow
 from .anomaly_detection import detect_anomalies
+from .throttles import TransactionRateThrottle
 
 # ========== Registration ==========
 
@@ -172,6 +172,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
               .values('from_account__user__username')\
               .annotate(total_spent=Sum('amount')).order_by('-total_spent')[:10]
         return Response(list(top))
+    
+    class TransactionViewSet(viewsets.ModelViewSet):
+        serializer_class = TransactionSerializer
+        throttle_classes = [TransactionRateThrottle]
 
 # ========== Business ==========
 
@@ -214,10 +218,17 @@ class GuardianViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['post'], url_path='approve-transaction')
     def approve_transaction(self, request):
         pending_id = request.data.get('pending_id')
-        notes = request.data.get('notes', '')
         pending = PendingTransaction.objects.get(id=pending_id)
         self.verify_managed_user(pending.account_holder.id)
-        result = execute_pending_approval_flow(pending_id, request.user, notes)
+        result = execute_pending_approval_flow(pending_id, request.user, request.data.get('notes', ''))
+        audit_logger.info(
+            'APPROVE | guardian=%s | pending_id=%s | holder=%s | amount=%s | merchant=%s',
+            request.user.username,
+            pending_id,
+            pending.account_holder.username,
+            pending.amount,
+            pending.merchant_name
+        )
         return Response({'status': result['status']})
 
     @action(detail=True, methods=['patch'], url_path='update-limits', url_name='update-limits')
@@ -263,6 +274,14 @@ class GuardianViewSet(viewsets.GenericViewSet):
         pending.guardian_notes = notes
         pending.guardian = request.user
         pending.save()
+        audit_logger.info(
+            'REJECT | guardian=%s | pending_id=%s | holder=%s | amount=%s | merchant=%s',
+            request.user.username,
+            pending_id,
+            pending.account_holder.username,
+            pending.amount,
+            pending.merchant_name
+        )
         return Response({'status': 'rejected'})
 
     @action(detail=True, methods=['get'], url_path='whitelist')
