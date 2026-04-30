@@ -22,7 +22,7 @@ from rest_framework.decorators import action
 
 # Models & Serializers
 from .models import Account, Transaction, Business, PendingTransaction
-from .serializers import AccountSerializer, TransactionSerializer, BusinessSerializer, PendingTransactionSerializer
+from .serializers import AccountSerializer, TransactionSerializer, BusinessSerializer, PendingTransactionSerializer, MerchantWhitelistSerializer
 from .guardian_models import SafeSpendLimit, UserProfile, MerchantWhitelist
 from .governance import check_transaction
 from .services import execute_pending_approval_flow
@@ -35,8 +35,7 @@ class UserRegistrationView(APIView):
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
         password = request.data.get('password')
-        email = request.data.get('email', '')
-        
+
         if not username or not password:
             return Response({"error": "Username and password required"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -44,7 +43,7 @@ class UserRegistrationView(APIView):
             return Response({"error": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            user = User.objects.create_user(username=username, password=password, email=email)
+            user = User.objects.create_user(username=username, password=password, email='')
             accounts = Account.objects.filter(user=user)
             return Response({
                 "message": "User registered successfully",
@@ -110,6 +109,8 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='reclaim-roundup', url_name='reclaim-roundup')
     def reclaim_roundup(self, request, pk=None):
         return Response({"status": "roundup reclaimed"})
+    
+    
 
 # ========== Transactions ==========
 
@@ -147,7 +148,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def account_transactions(self, request, account_id=None):
         account = Account.objects.get(id=account_id)
         if account.user != request.user and not request.user.is_staff:
-            return Response({"detail": "Forbidden"}, status=403)
+            return Response({"error": "Forbidden"}, status=403)
         transactions = Transaction.objects.filter(from_account=account)
         return Response(self.get_serializer(transactions, many=True).data)
 
@@ -155,7 +156,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def spending_summary(self, request, account_id=None):
         account = Account.objects.get(id=account_id)
         if account.user != request.user and not request.user.is_staff:
-            return Response({"detail": "Forbidden"}, status=403)
+            return Response({"error": "Forbidden"}, status=403)
         summary = Transaction.objects.filter(from_account=account, transaction_type="payment")\
                   .values('business__category').annotate(total=Sum('amount'))
         return Response(list(summary))
@@ -163,7 +164,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='top-10-spenders', url_name='top-10-spenders')
     def top_10_spenders(self, request):
         if not request.user.is_staff:
-            return Response({"detail": "Forbidden"}, status=403)
+            return Response({"error": "Forbidden"}, status=403)
         top = Transaction.objects.filter(transaction_type="payment")\
               .values('from_account__user__username')\
               .annotate(total_spent=Sum('amount')).order_by('-total_spent')[:10]
@@ -210,16 +211,17 @@ class GuardianViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['post'], url_path='approve-transaction')
     def approve_transaction(self, request):
         pending_id = request.data.get('pending_id')
+        notes = request.data.get('notes', '')
         pending = PendingTransaction.objects.get(id=pending_id)
         self.verify_managed_user(pending.account_holder.id)
-        result = execute_pending_approval_flow(pending_id, request.user, "Approved")
-        return Response(result)
+        result = execute_pending_approval_flow(pending_id, request.user, notes)
+        return Response({'status': result['status']})
 
     @action(detail=True, methods=['patch'], url_path='update-limits', url_name='update-limits')
     def update_limits(self, request, pk=None):
         holder = self.verify_managed_user(pk)
         limit, _ = SafeSpendLimit.objects.get_or_create(account_holder=holder)
-        for field in ['daily_limit', 'allow_late_night']:
+        for field in ['daily_limit', 'allow_late_night', 'quiet_hours_start', 'quiet_hours_end']:
             if field in request.data:
                 setattr(limit, field, request.data[field])
         limit.save()
@@ -229,5 +231,79 @@ class GuardianViewSet(viewsets.GenericViewSet):
     def activity_feed(self, request, pk=None):
         holder = self.verify_managed_user(pk)
         txs = Transaction.objects.filter(from_account__user=holder).order_by('-timestamp')[:20]
-        data = [{'amount': str(t.amount), 'merchant': t.merchant_name} for t in txs]
+        data = [{'amount': str(t.amount), 'merchant': t.merchant_name, 'transaction_type': t.transaction_type} for t in txs]
         return Response({'feed': data})
+    
+    @action(detail=False, methods=['get'], url_path='my-pending')
+    def my_pending(self, request):
+        pending = PendingTransaction.objects.filter(
+        account_holder=request.user,
+        status='pending'
+    ).order_by('-created_at')
+        data = [{
+        'pending_id': str(p.id),
+        'amount': f"{p.amount:.2f}",
+        'merchant': p.merchant_name,
+        'created_at': p.created_at.isoformat(),
+        'status': p.status,
+        'reason_flag': p.reason_flag,
+        } for p in pending]
+        return Response({'pending_transactions': data})
+    
+    @action(detail=False, methods=['post'], url_path='reject-transaction')
+    def reject_transaction(self, request):
+        pending_id = request.data.get('pending_id')
+        notes = request.data.get('notes', '')
+        pending = PendingTransaction.objects.get(id=pending_id)
+        self.verify_managed_user(pending.account_holder.id)
+        pending.status = 'rejected'
+        pending.guardian_notes = notes
+        pending.guardian = request.user
+        pending.save()
+        return Response({'status': 'rejected'})
+    
+    # Inside GuardianViewSet class
+
+    @action(detail=True, methods=['get'], url_path='whitelist')
+    def whitelist_list(self, request, pk=None):
+        """
+        GET /api/guardian/{pk}/whitelist/
+        Returns all whitelist rules for the given account holder.
+        """
+        account_holder = self.verify_guardian_manages_account_holder(pk)
+        rules = MerchantWhitelist.objects.filter(account_holder=account_holder)
+        serializer = MerchantWhitelistSerializer(rules, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get', 'post'], url_path='whitelist')
+    def whitelist(self, request, pk=None):
+        holder = self.verify_managed_user(pk)
+        
+        if request.method == 'GET':
+            rules = MerchantWhitelist.objects.filter(account_holder=holder)
+            serializer = MerchantWhitelistSerializer(rules, many=True)
+            return Response(serializer.data)
+        
+        if request.method == 'POST':
+            serializer = MerchantWhitelistSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(account_holder=holder)
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
+
+    @action(detail=True, methods=['delete'], url_path='whitelist/(?P<rule_id>[^/.]+)')
+    def whitelist_delete(self, request, pk=None, rule_id=None):
+        holder = self.verify_managed_user(pk)
+        try:
+            rule = MerchantWhitelist.objects.get(id=rule_id, account_holder=holder)
+            rule.delete()
+            return Response({'status': 'deleted'}, status=204)
+        except MerchantWhitelist.DoesNotExist:
+            return Response({'error': 'Rule not found'}, status=404)
+        
+    @action(detail=False, methods=['get'], url_path='managed-accounts')
+    def managed_accounts(self, request):
+        profile = self.get_guardian_profile()
+        accounts = profile.managed_accounts.all()
+        data = [{'id': u.id, 'username': u.username} for u in accounts]
+        return Response({'managed_accounts': data})    

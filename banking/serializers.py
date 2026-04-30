@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from .models import Transaction, Account, Business, PendingTransaction
-from .guardian_models import UserProfile, SafeSpendLimit
+from .guardian_models import UserProfile, SafeSpendLimit, MerchantWhitelist
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = ['id', 'username', 'first_name', 'last_name']
         read_only_fields = ['id']
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -41,6 +41,10 @@ class PendingTransactionSerializer(serializers.ModelSerializer):
             'status', 'reason_flag', 'created_at', 'guardian_notes',
             # New external integration fields
             'external_id', 'payment_status',
-            'pre_authorization_id', 'pre_authorization_expires_at'
         ]
         read_only_fields = ['external_id', 'gateway_response', 'gateway_name', 'payment_status']
+        
+class MerchantWhitelistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MerchantWhitelist
+        fields = ['id', 'merchant_name', 'category', 'rule_type']        

@@ -6,6 +6,8 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Account
 from .serializers import AccountSerializer
+from .guardian_models import UserProfile
+
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -36,10 +38,10 @@ class LoginView(APIView):
             'user': {
                 'id': user.id,
                 'username': user.username,
-                'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'is_staff': user.is_staff,
+                'is_guardian': UserProfile.objects.filter(user=user).values_list('is_guardian', flat=True).first() or False,
             },
             'accounts': account_data,
             'access': str(refresh.access_token),
@@ -60,10 +62,10 @@ class UserAccountsView(APIView):
             'user': {
                 'id': user.id,
                 'username': user.username,
-                'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'is_staff': user.is_staff,
+                'is_guardian': UserProfile.objects.filter(user=user).values_list('is_guardian', flat=True).first() or False,
             },
             'accounts': AccountSerializer(accounts, many=True).data
         })

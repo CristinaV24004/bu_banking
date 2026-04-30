@@ -9,33 +9,20 @@ import Alert from '../components/ui/Alert';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { register, } = useAuth();
-
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const { register } = useAuth();
 
   const validate = () => {
     if (!username.trim()) {
       setError('Username is required');
       return false;
     }
-    if (!email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
+  
     if (!password) {
       setError('Password is required');
       return false;
@@ -59,7 +46,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       // Attempt to register (AuthContext.register handles auto-login)
-      const result = await register(username, password, email);
+      const result = await register(username, password, '');
       if (!result.success) {
         setError(result.error || 'Registration failed');
         setLoading(false);
@@ -69,7 +56,7 @@ const RegisterPage = () => {
       // After successful registration (and auto-login), fetch user role to determine redirect
       try {
         const userRes = await axiosInstance.get('/auth/user/');
-        const isGuardian = userRes.data.is_guardian === true;
+        const isGuardian = userRes.data.user.is_guardian === true;
         if (isGuardian) {
           setLoading(false);
           navigate('/guardian');
@@ -106,19 +93,6 @@ const RegisterPage = () => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              disabled={loading}
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
               disabled={loading}
             />
