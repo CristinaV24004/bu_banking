@@ -21,11 +21,12 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.decorators import action
 
 # Models & Serializers
-from .models import Account, Transaction, Business, PendingTransaction
+from .models import Account, Transaction, Business, PendingTransaction, AnomalyAlert
 from .serializers import AccountSerializer, TransactionSerializer, BusinessSerializer, PendingTransactionSerializer, MerchantWhitelistSerializer
 from .guardian_models import SafeSpendLimit, UserProfile, MerchantWhitelist
 from .governance import check_transaction
 from .services import execute_pending_approval_flow
+from .anomaly_detection import detect_anomalies
 
 # ========== Registration ==========
 
@@ -143,6 +144,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
             raise DRFValidationError({"status": "PENDING", "message": reason})
 
         serializer.save(from_account=from_account)
+        transaction = serializer.instance
+        detect_anomalies(from_account.user, transaction)
 
     @action(detail=False, methods=['get'], url_path='account/(?P<account_id>[^/.]+)', url_name='account-transactions')
     def account_transactions(self, request, account_id=None):
@@ -261,8 +264,6 @@ class GuardianViewSet(viewsets.GenericViewSet):
         pending.guardian = request.user
         pending.save()
         return Response({'status': 'rejected'})
-    
-    # Inside GuardianViewSet class
 
     @action(detail=True, methods=['get'], url_path='whitelist')
     def whitelist_list(self, request, pk=None):
@@ -307,3 +308,31 @@ class GuardianViewSet(viewsets.GenericViewSet):
         accounts = profile.managed_accounts.all()
         data = [{'id': u.id, 'username': u.username} for u in accounts]
         return Response({'managed_accounts': data})    
+    
+    @action(detail=False, methods=['get'], url_path='pending-count')
+    def pending_count(self, request):
+        guardian_profile = self.get_guardian_profile()
+        managed_user_ids = guardian_profile.managed_accounts.values_list('id', flat=True)
+        count = PendingTransaction.objects.filter(
+            account_holder__id__in=managed_user_ids,
+            status='pending'
+        ).count()
+        return Response({'count': count})
+    
+    @action(detail=True, methods=['post'], url_path='anomaly-alerts/(?P<alert_id>[^/.]+)/resolve')
+    def resolve_anomaly_alert(self, request, pk=None, alert_id=None):
+        holder = self.verify_managed_user(pk)
+        try:
+            alert = AnomalyAlert.objects.get(id=alert_id, account_holder=holder)
+        except AnomalyAlert.DoesNotExist:
+            return Response({'error': 'Alert not found'}, status=404)
+        
+        resolution = request.data.get('resolution', 'reviewed')
+        if resolution not in ['reviewed', 'ignored']:
+            return Response({'error': 'Invalid resolution'}, status=400)
+        
+        alert.status = resolution
+        alert.reviewed_by = request.user
+        alert.reviewed_at = timezone.now()
+        alert.save()
+        return Response({'status': alert.status})

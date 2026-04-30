@@ -81,3 +81,47 @@ class PendingTransaction(models.Model):
 
     def __str__(self):
         return f"Pending: £{self.amount} for {self.account_holder.username} ({self.status})"
+    
+class AnomalyAlert(models.Model):
+    SEVERITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('reviewed', 'Reviewed'),
+        ('ignored', 'Ignored'),
+    ]
+
+    account_holder = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='anomaly_alerts'
+    )
+    transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.CASCADE,
+        related_name='anomaly_alerts',
+        null=True,
+        blank=True
+    )
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='low')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_alerts'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Alert [{self.severity}] for {self.account_holder.username} - {self.reason[:50]}"    
