@@ -46,7 +46,7 @@ class Transaction(models.Model):
     from_account = models.ForeignKey(Account, related_name='outgoing_transactions', on_delete=models.CASCADE)
     to_account = models.ForeignKey(Account, related_name='incoming_transactions', on_delete=models.CASCADE, null=True, blank=True)
     business = models.ForeignKey(Business, related_name='transactions', on_delete=models.CASCADE, null=True, blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     # NEW FIELDS (External API Prep)
     merchant_name = models.CharField(max_length=255, blank=True)
@@ -70,7 +70,7 @@ class PendingTransaction(models.Model):
 
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     merchant_name = models.CharField(max_length=255)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     reason_flag = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
     
