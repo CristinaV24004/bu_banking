@@ -103,7 +103,6 @@ const AnomalyAlertsWidget = ({ accountHolderId }) => {
               <div className="mt-3 flex gap-2">
                 <Button
                   variant="primary"
-                  size="sm"
                   loading={resolvingId === alert.id}
                   disabled={resolvingId === alert.id}
                   onClick={() => resolveAlert(alert.id, 'reviewed')}
@@ -113,7 +112,6 @@ const AnomalyAlertsWidget = ({ accountHolderId }) => {
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
                   loading={resolvingId === alert.id}
                   disabled={resolvingId === alert.id}
                   onClick={() => resolveAlert(alert.id, 'ignored')}

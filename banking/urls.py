@@ -17,7 +17,7 @@ from .views import (
     GuardianViewSet, 
     UserRegistrationView
 )
-from .test_view import TestView
+from .tests.test_view import TestView
 
 # --- Router Setup ---
 router = DefaultRouter()
