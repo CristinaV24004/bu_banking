@@ -52,11 +52,15 @@ class UserAccountsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, *args, **kwargs):
-        """
-        Get the current user's profile and accounts
-        """
         user = request.user
         accounts = Account.objects.filter(user=user)
+        profile = UserProfile.objects.filter(user=user).first()
+        
+        managed_accounts = []
+        if profile and profile.is_guardian:
+            managed_accounts = list(
+                profile.managed_accounts.values('id', 'username')
+            )
         
         return Response({
             'user': {
@@ -65,7 +69,8 @@ class UserAccountsView(APIView):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'is_staff': user.is_staff,
-                'is_guardian': UserProfile.objects.filter(user=user).values_list('is_guardian', flat=True).first() or False,
+                'is_guardian': profile.is_guardian if profile else False,
             },
-            'accounts': AccountSerializer(accounts, many=True).data
+            'accounts': AccountSerializer(accounts, many=True).data,
+            'managed_accounts': managed_accounts,
         })

@@ -5,6 +5,7 @@ import { axiosInstance } from '../api/axiosInstance';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Alert from '../components/ui/Alert';
+import logoFull from '../assets/gv-logo-simple.png';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -47,7 +48,7 @@ const LoginPage = () => {
 
       try {
         const userRes = await axiosInstance.get('/auth/user/');
-        const isGuardian = userRes.data.is_guardian === true;
+        const isGuardian = userRes.data.user?.is_guardian === true;
         if (isGuardian) {
           navigate('/guardian');
         } else {
@@ -63,8 +64,16 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
-      <Card title="Sign In" className="w-full max-w-md">
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] px-4 py-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex flex-col items-center">
+            <img src={logoFull} alt="Guardian Vault" className="h-24 w-auto mb-4" />
+            <div className="flex flex-col items-center leading-tight">
+              <span className="font-cinzel font-semibold text-[#0D2B55] text-xl">Guardian</span>
+              <span className="font-cinzel font-bold text-[#C9992A] text-xl tracking-widest">VAULT</span>
+          </div>
+        </div>
+        <Card title="Sign In" className="w-full">
         <form onSubmit={handleSubmit}>
           {error && (
             <div className="mb-4">
@@ -109,6 +118,7 @@ const LoginPage = () => {
         </div>
       </Card>
     </div>
+  </div>  
   );
 };
 

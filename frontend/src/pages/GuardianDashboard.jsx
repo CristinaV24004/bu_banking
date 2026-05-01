@@ -10,7 +10,7 @@ import AnomalyAlertsWidget from '../components/AnomalyAlertsWidget';
 
 const GuardianDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [guardianProfile, setGuardianProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [error, setError] = useState(null);
@@ -67,7 +67,6 @@ const GuardianDashboard = () => {
             <h1 className="text-2xl font-bold text-gray-900">Guardian Dashboard</h1>
             <p className="text-gray-600">Welcome back, {guardianProfile?.username || user?.username || 'Guardian'}</p>
           </div>
-          <Button variant="ghost" onClick={logout} className="w-full sm:w-auto">Logout</Button>
         </div>
 
         {(error || pollingError) && (
@@ -128,8 +127,8 @@ const GuardianDashboard = () => {
 
         <div className="grid gap-3 sm:grid-cols-3">
           <Button variant="primary" onClick={() => navigate('/guardian/approvals')} className="w-full">Review Approvals</Button>
-          <Button variant="ghost" onClick={() => navigate('/guardian/whitelist')} className="w-full">Manage Whitelist</Button>
-          <Button variant="ghost" onClick={() => navigate('/guardian/limits')} className="w-full">Manage Limits</Button>
+          <Button variant="primary" onClick={() => navigate('/guardian/whitelist')} className="w-full">Manage Whitelist</Button>
+          <Button variant="primary" onClick={() => navigate('/guardian/limits')} className="w-full">Manage Limits</Button>
         </div>
       </div>
     </div>

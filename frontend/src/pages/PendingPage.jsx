@@ -15,7 +15,7 @@ const PendingPage = () => {
     const fetchPending = async () => {
       try {
         setError(null);
-        const response = await axiosInstance.get('/guardian/pending-reviews/');
+        const response = await axiosInstance.get('/guardian/my-pending/');
         const pendingList = response.data.pending_transactions || [];
         setTransactions(pendingList);
       } catch (err) {

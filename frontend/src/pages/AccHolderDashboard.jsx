@@ -8,7 +8,7 @@ import Alert from '../components/ui/Alert';
 import SafeSpendWidget from '../components/SafeSpendWidget';
 
 const AccHolderDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -99,9 +99,6 @@ const AccHolderDashboard = () => {
             </h1>
             <p className="text-gray-600">Here are your accounts and current balances</p>
           </div>
-          <Button variant="ghost" onClick={logout}>
-            Logout
-          </Button>
         </div>
 
         {/* Error alert */}
