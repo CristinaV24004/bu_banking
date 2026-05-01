@@ -9,7 +9,7 @@ import Modal from '../components/ui/Modal';
 
 const GuardianApprovalsPage = () => {
   const navigate = useNavigate();
-  const { pendingTransactions, loading, error: pollingError } = usePendingPolling(true);
+  const { pendingTransactions, loading, error: pollingError } = usePendingPolling();
   const [localTransactions, setLocalTransactions] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
@@ -18,13 +18,12 @@ const GuardianApprovalsPage = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
 
-  // Sync localTransactions when pendingTransactions changes
   useEffect(() => {
     setLocalTransactions(pendingTransactions);
   }, [pendingTransactions]);
 
   const removeTransaction = (pendingId) => {
-    setLocalTransactions((prev) => prev.filter((tx) => tx.pending_id !== pendingId));
+    setLocalTransactions(prev => prev.filter(tx => tx.pending_id !== pendingId));
   };
 
   const openModal = (transaction, action) => {
@@ -46,15 +45,21 @@ const GuardianApprovalsPage = () => {
     if (!selectedTx) return;
     setModalLoading(true);
     setModalError('');
-
     const { pending_id } = selectedTx;
     const payload = { pending_id, notes };
-
     try {
       if (modalAction === 'approve') {
         await axiosInstance.post('/guardian/approve-transaction/', payload);
       } else {
-        await axiosInstance.post('/guardian/reject-transaction/', payload);
+        try {
+          await axiosInstance.post('/guardian/reject-transaction/', payload);
+        } catch (rejectErr) {
+          if (rejectErr.response?.status === 404) {
+            setModalError('Reject endpoint not available. Please contact support.')
+          } else {
+            throw rejectErr;
+          }
+        }
       }
       removeTransaction(pending_id);
       setSuccessMessage(`Transaction ${modalAction === 'approve' ? 'approved' : 'rejected'} successfully.`);
@@ -65,11 +70,11 @@ const GuardianApprovalsPage = () => {
     } finally {
       setModalLoading(false);
     }
-  };  
+  };
 
   const formatCurrency = (amount) => {
-    const num = Number.parseFloat(amount);
-    if (Number.isNaN(num)) return '£0.00';
+    const num = parseFloat(amount);
+    if (isNaN(num)) return '£0.00';
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2 }).format(num);
   };
 
@@ -85,14 +90,16 @@ const GuardianApprovalsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/guardian')}>← Back to Dashboard</Button>
+          <Button variant="ghost" onClick={() => navigate('/guardian')} className="w-full sm:w-auto">
+            ← Back to Dashboard
+          </Button>
         </div>
 
         <Card title="Pending Approvals">
-          {pollingError && <Alert type="error" message={pollingError} />}
+          {pollingError && <Alert type="error" message={pollingError} onDismiss={() => { }} />}
           {successMessage && <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />}
 
           {localTransactions.length === 0 ? (
@@ -100,15 +107,17 @@ const GuardianApprovalsPage = () => {
           ) : (
             <div className="space-y-4">
               {localTransactions.map((tx) => (
-                <div key={tx.pending_id} className="flex flex-wrap items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                  <div className="flex-1">
+                <div key={tx.pending_id} className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                  <div>
                     <div className="font-medium text-gray-900">{tx.merchant || 'Unknown merchant'}</div>
                     <div className="text-sm text-gray-500">{formatCurrency(tx.amount)}</div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="mr-2 inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Pending</span>
-                    <Button variant="primary" onClick={() => openModal(tx, 'approve')} className="px-3 py-1 text-sm">Approve</Button>
-                    <Button variant="danger" onClick={() => openModal(tx, 'reject')} className="px-3 py-1 text-sm">Reject</Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Pending</span>
+                    <div className="flex flex-1 justify-end gap-2">
+                      <Button variant="primary" size="sm" onClick={() => openModal(tx, 'approve')} className="px-3 py-1 text-sm">Approve</Button>
+                      <Button variant="danger" size="sm" onClick={() => openModal(tx, 'reject')} className="px-3 py-1 text-sm">Reject</Button>
+                    </div>
                   </div>
                 </div>
               ))}

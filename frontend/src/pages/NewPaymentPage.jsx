@@ -1,4 +1,3 @@
-// src/pages/NewPaymentPage.jsx
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../api/axiosInstance';
@@ -13,23 +12,15 @@ const NewPaymentPage = () => {
   const [currentAccount, setCurrentAccount] = useState(null);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [error, setError] = useState(null);
-
-  // Form state
   const [merchantSearch, setMerchantSearch] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-
-  // Modal state for pending approval
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [pendingMessage, setPendingMessage] = useState('');
-
-  // All businesses (filtered to non-sanctioned)
   const [allBusinesses, setAllBusinesses] = useState([]);
-  const [loadingBusinesses, setLoadingBusinesses] = useState(false);
 
-  // Fetch accounts on mount
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
@@ -42,7 +33,6 @@ const NewPaymentPage = () => {
           return;
         }
         setAccounts(userAccounts);
-        // Find first account with type 'current', otherwise first account
         const currentAcc = userAccounts.find(acc => acc.account_type === 'current') || userAccounts[0];
         setCurrentAccount(currentAcc);
       } catch (err) {
@@ -55,38 +45,28 @@ const NewPaymentPage = () => {
     fetchAccounts();
   }, []);
 
-  // Fetch businesses (non-sanctioned only) once
   useEffect(() => {
     const fetchBusinesses = async () => {
-      setLoadingBusinesses(true);
       try {
         const res = await axiosInstance.get('/businesses/');
-        // Filter out sanctioned businesses
         const nonSanctioned = res.data.filter(biz => !biz.sanctioned);
         setAllBusinesses(nonSanctioned);
       } catch (err) {
         console.error('Failed to fetch businesses:', err);
-        // Non-critical, just show error on search maybe
-      } finally {
-        setLoadingBusinesses(false);
       }
     };
     fetchBusinesses();
   }, []);
 
-  // Filter businesses based on search (min 2 chars, case-insensitive)
   const filteredBusinesses = useMemo(() => {
     if (merchantSearch.length < 2) return [];
     const searchLower = merchantSearch.toLowerCase();
-    return allBusinesses.filter(biz =>
-      biz.name.toLowerCase().includes(searchLower) ||
-      biz.category.toLowerCase().includes(searchLower)
-    );
+    return allBusinesses.filter(biz => biz.name.toLowerCase().includes(searchLower) || biz.category.toLowerCase().includes(searchLower));
   }, [merchantSearch, allBusinesses]);
 
   const handleSelectBusiness = (business) => {
     setSelectedBusiness(business);
-    setMerchantSearch(business.name); // show selected name in input
+    setMerchantSearch(business.name);
   };
 
   const validateAmount = (value) => {
@@ -124,35 +104,23 @@ const NewPaymentPage = () => {
         merchant_name: selectedBusiness.name,
       };
       const response = await axiosInstance.post('/transactions/', payload);
-
-      // 201 Created => APPROVED
       if (response.status === 201) {
         setSuccessMessage(`Payment of £${payload.amount} to ${selectedBusiness.name} was successful.`);
-        // Reset form
         setAmount('');
         setSelectedBusiness(null);
         setMerchantSearch('');
-        // Clear success after 5 seconds
         setTimeout(() => setSuccessMessage(''), 5000);
       }
     } catch (err) {
       const data = err.response?.data;
       const status = err.response?.status;
-
-      if (status === 400) {
-        // Check if it's PENDING or REJECTED based on response data
-        if (data && data.status === 'PENDING') {
-          // Show modal
-          setPendingMessage(data.message || 'This transaction requires guardian approval.');
-          setShowPendingModal(true);
-        } else if (data && data.status === 'REJECTED') {
-          setError(data.message || 'Transaction was rejected by the permission engine.');
-        } else {
-          // Generic error
-          setError(data?.message || data?.error || 'Transaction failed. Please try again.');
-        }
+      if (status === 400 && data?.status === 'PENDING') {
+        setPendingMessage(data.message || 'This transaction requires guardian approval.');
+        setShowPendingModal(true);
+      } else if (status === 400 && data?.status === 'REJECTED') {
+        setError(data.message || 'Transaction was rejected by the permission engine.');
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        setError(data?.message || data?.error || 'Transaction failed. Please try again.');
       }
     } finally {
       setSubmitting(false);
@@ -171,11 +139,10 @@ const NewPaymentPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-2xl">
-        {/* Back button */}
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full sm:w-auto">
             ← Back to Dashboard
           </Button>
         </div>
@@ -199,18 +166,15 @@ const NewPaymentPage = () => {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Merchant search with dropdown */}
             <div className="mb-4">
-              <label htmlFor="merchantSearch" className="mb-1 block text-sm font-medium text-gray-700">
-                Merchant *
-              </label>
+              <label htmlFor="merchantSearch" className="mb-1 block text-sm font-medium text-gray-700">Merchant *</label>
               <input
                 id="merchantSearch"
                 type="text"
                 value={merchantSearch}
                 onChange={(e) => {
                   setMerchantSearch(e.target.value);
-                  if (selectedBusiness) setSelectedBusiness(null); // clear selection if search changes
+                  if (selectedBusiness) setSelectedBusiness(null);
                 }}
                 placeholder="Type at least 2 characters to search..."
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
@@ -219,14 +183,10 @@ const NewPaymentPage = () => {
               {merchantSearch.length >= 2 && filteredBusinesses.length > 0 && !selectedBusiness && (
                 <ul className="mt-1 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
                   {filteredBusinesses.map((biz) => (
-                    <button
-                      key={biz.id}
-                      className="cursor-pointer px-3 py-2 hover:bg-gray-100"
-                      onClick={() => handleSelectBusiness(biz)}
-                    >
+                    <li key={biz.id} className="cursor-pointer px-3 py-2 hover:bg-gray-100" onClick={() => handleSelectBusiness(biz)}>
                       <div className="font-medium">{biz.name}</div>
                       <div className="text-xs text-gray-500">{biz.category}</div>
-                    </button>
+                    </li>
                   ))}
                 </ul>
               )}
@@ -235,28 +195,14 @@ const NewPaymentPage = () => {
               )}
               {selectedBusiness && (
                 <div className="mt-1 flex items-center justify-between rounded-md bg-gray-100 px-3 py-2">
-                  <span>
-                    Selected: <strong>{selectedBusiness.name}</strong> ({selectedBusiness.category})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedBusiness(null);
-                      setMerchantSearch('');
-                    }}
-                    className="text-sm text-red-600 hover:underline"
-                  >
-                    Change
-                  </button>
+                  <span>Selected: <strong>{selectedBusiness.name}</strong> ({selectedBusiness.category})</span>
+                  <button type="button" onClick={() => { setSelectedBusiness(null); setMerchantSearch(''); }} className="text-sm text-red-600 hover:underline">Change</button>
                 </div>
               )}
             </div>
 
-            {/* Amount field */}
             <div className="mb-4">
-              <label htmlFor="amount" className="mb-1 block text-sm font-medium text-gray-700">
-                Amount (£) *
-              </label>
+              <label htmlFor="amount" className="mb-1 block text-sm font-medium text-gray-700">Amount (£) *</label>
               <input
                 id="amount"
                 type="number"
@@ -270,42 +216,19 @@ const NewPaymentPage = () => {
               />
             </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              loading={submitting}
-              disabled={submitting || !currentAccount || !selectedBusiness || !amount}
-              className="w-full"
-            >
+            <Button type="submit" variant="primary" loading={submitting} disabled={submitting || !currentAccount || !selectedBusiness || !amount} className="w-full">
               Pay Now
             </Button>
           </form>
         </Card>
       </div>
 
-      {/* Pending Approval Modal */}
       <Modal isOpen={showPendingModal} onClose={() => setShowPendingModal(false)} title="Awaiting Guardian Approval">
         <div className="space-y-4">
-          <p className="text-gray-700">
-            {pendingMessage || 'This transaction has been sent to your guardian for approval.'}
-          </p>
-          <p className="text-sm text-gray-500">
-            You will be notified once a decision is made. No money has been moved yet.
-          </p>
+          <p className="text-gray-700">{pendingMessage || 'This transaction has been sent to your guardian for approval.'}</p>
+          <p className="text-sm text-gray-500">You will be notified once a decision is made. No money has been moved yet.</p>
           <div className="flex justify-end">
-            <Button
-              variant="primary"
-              onClick={() => {
-                setShowPendingModal(false);
-                // Optionally reset form
-                setAmount('');
-                setSelectedBusiness(null);
-                setMerchantSearch('');
-                navigate('/dashboard');
-              }}
-            >
-              OK
-            </Button>
+            <Button variant="primary" onClick={() => { setShowPendingModal(false); setAmount(''); setSelectedBusiness(null); setMerchantSearch(''); }}>OK</Button>
           </div>
         </div>
       </Modal>
