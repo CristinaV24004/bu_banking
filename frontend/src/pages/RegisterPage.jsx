@@ -5,6 +5,7 @@ import { axiosInstance } from '../api/axiosInstance';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Alert from '../components/ui/Alert';
+import logoFull from '../assets/gv-logo-simple.png';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
@@ -81,10 +82,18 @@ const RegisterPage = () => {
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
-      <Card title="Create Account" className="w-full max-w-md">
-        <form onSubmit={handleSubmit}>
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] px-4 py-8">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex flex-col items-center">
+            <img src={logoFull} alt="Guardian Vault" className="h-24 w-auto mb-4" />
+            <div className="flex flex-col items-center leading-tight">
+              <span className="font-cinzel font-semibold text-[#0D2B55] text-xl">Guardian</span>
+              <span className="font-cinzel font-bold text-[#C9992A] text-xl tracking-widest">VAULT</span>
+            </div>
+          </div> 
+        <Card title="Create Account" className="w-full max-w-md">
+          <form onSubmit={handleSubmit}>
           {error && (
             <div className="mb-4">
               <Alert type="error" message={error} onDismiss={() => setError('')} />
@@ -155,6 +164,7 @@ const RegisterPage = () => {
         </div>
       </Card>
     </div>
+  </div>  
   );
 };
 

@@ -1,107 +1,146 @@
-// src/App.jsx
+// src/App.jsx (relevant part)
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleRoute } from './components/RoleRoute';
+import Layout from './components/Layout';
 
-// Import placeholder page components (defined below)
+// Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import AccHolderDashboard from './pages/AccHolderDashboard';
-import GuardianDashboard from './pages/GuardianDashboard';
 import UnauthorizedPage from './pages/UnauthorizedPage';
+import AccHolderDashboard from './pages/AccHolderDashboard';
 import TransactionsPage from './pages/TransactionsPage';
+import NewPaymentPage from './pages/NewPaymentPage';
 import PendingPage from './pages/PendingPage';
+import GuardianDashboard from './pages/GuardianDashboard';
 import GuardianApprovalsPage from './pages/GuardianApprovalsPage';
 import GuardianWhitelistPage from './pages/GuardianWhitelistPage';
 import GuardianLimitsPage from './pages/GuardianLimitsPage';
-import NewPaymentPage from './pages/NewPaymentPage';
 import GuardianTransactionsPage from './pages/GuardianTransactionsPage';
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Public routes – no Layout */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Account_holder routes */}
+      {/* Account Holder routes – wrapped in Layout */}
       <Route
         path="/dashboard"
         element={
+          <ProtectedRoute>
             <RoleRoute requiredRole="account_holder">
-              <AccHolderDashboard />
+              <Layout>
+                <AccHolderDashboard />
+              </Layout>
             </RoleRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/transactions"
         element={
+          <ProtectedRoute>
             <RoleRoute requiredRole="account_holder">
-              <TransactionsPage />
+              <Layout>
+                <TransactionsPage />
+              </Layout>
             </RoleRoute>
-        }
-      />
-      <Route
-        path="/pending"
-        element={
-            <RoleRoute requiredRole="account_holder">
-              <PendingPage />
-            </RoleRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/payment/new"
         element={
-          <RoleRoute requiredRole="account_holder">
-            <NewPaymentPage />
-          </RoleRoute>
+          <ProtectedRoute>
+            <RoleRoute requiredRole="account_holder">
+              <Layout>
+                <NewPaymentPage />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pending"
+        element={
+          <ProtectedRoute>
+            <RoleRoute requiredRole="account_holder">
+              <Layout>
+                <PendingPage />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
         }
       />
 
-      {/* Guardian routes */}
+      {/* Guardian routes – wrapped in Layout */}
       <Route
         path="/guardian"
         element={
+          <ProtectedRoute>
             <RoleRoute requiredRole="guardian">
-              <GuardianDashboard />
+              <Layout>
+                <GuardianDashboard />
+              </Layout>
             </RoleRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/guardian/approvals"
         element={
+          <ProtectedRoute>
             <RoleRoute requiredRole="guardian">
-              <GuardianApprovalsPage />
+              <Layout>
+                <GuardianApprovalsPage />
+              </Layout>
             </RoleRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/guardian/whitelist"
         element={
+          <ProtectedRoute>
             <RoleRoute requiredRole="guardian">
-              <GuardianWhitelistPage />
+              <Layout>
+                <GuardianWhitelistPage />
+              </Layout>
             </RoleRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/guardian/limits"
         element={
+          <ProtectedRoute>
             <RoleRoute requiredRole="guardian">
-              <GuardianLimitsPage />
+              <Layout>
+                <GuardianLimitsPage />
+              </Layout>
             </RoleRoute>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/guardian/transactions"
         element={
-          <RoleRoute requiredRole="guardian">
-            <GuardianTransactionsPage />
-          </RoleRoute>
+          <ProtectedRoute>
+            <RoleRoute requiredRole="guardian">
+              <Layout>
+                <GuardianTransactionsPage />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
         }
       />
+
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
@@ -115,6 +154,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
 
 export default App;

@@ -11,7 +11,7 @@ const TransactionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState(null);
-  const [setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState([]);
 
   useEffect(() => {
     const fetchAccounts = async () => {

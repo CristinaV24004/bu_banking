@@ -27,17 +27,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login: call /api/token/ and store access token in memory
   const login = async (username, password) => {
     try {
       const response = await axios.post('/api/token/', { username, password });
       const { access } = response.data;
-      // refresh token is automatically stored in HttpOnly cookie by backend
       setAccessToken(access);
       setAuthToken(access);
-      decodeAndSetUser(access);
+
+      const decoded = jwtDecode(access);
       const userRes = await axiosInstance.get('/auth/user/');
-      setUser(prev => ({ ...prev, username: userRes.data.user.username }));
+
+      setUser({
+        userId: decoded.user_id,
+        username: userRes.data.user.username,
+        is_guardian: userRes.data.user.is_guardian === true,
+      });
+
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
