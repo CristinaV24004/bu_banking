@@ -194,8 +194,7 @@ const NewPaymentPage = () => {
 
           {currentAccount && (
             <div className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
-              Paying from: <strong>{currentAccount.name}</strong> (Balance:
-              £{Number.parseFloat(currentAccount.starting_balance).toFixed(2)})
+              Paying from: <strong>{currentAccount.name}</strong>
             </div>
           )}
 
