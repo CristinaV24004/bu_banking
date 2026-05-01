@@ -61,7 +61,10 @@ const NewPaymentPage = () => {
   const filteredBusinesses = useMemo(() => {
     if (merchantSearch.length < 2) return [];
     const searchLower = merchantSearch.toLowerCase();
-    return allBusinesses.filter(biz => biz.name.toLowerCase().includes(searchLower) || biz.category.toLowerCase().includes(searchLower));
+    return allBusinesses.filter(biz =>
+      biz.name.toLowerCase().includes(searchLower) ||
+      biz.category.toLowerCase().includes(searchLower)
+    );
   }, [merchantSearch, allBusinesses]);
 
   const handleSelectBusiness = (business) => {
@@ -82,14 +85,8 @@ const NewPaymentPage = () => {
     setPendingMessage('');
     setShowPendingModal(false);
 
-    if (!currentAccount) {
-      setError('No valid account selected.');
-      return;
-    }
-    if (!selectedBusiness) {
-      setError('Please select a merchant from the list.');
-      return;
-    }
+    if (!currentAccount) { setError('No valid account selected.'); return; }
+    if (!selectedBusiness) { setError('Please select a merchant from the list.'); return; }
     if (!amount || !validateAmount(amount)) {
       setError('Please enter a valid amount (positive number with up to 2 decimal places).');
       return;
@@ -127,14 +124,17 @@ const NewPaymentPage = () => {
     }
   };
 
+  const inputClasses = "w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2";
+
   if (loadingAccounts) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="mb-4 text-gray-600">Loading account information...</div>
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-        </div>
-      </div>
+      <output className="text-center block" aria-label="Loading account information">
+        <div className="mb-4 text-gray-600" aria-hidden="true">Loading account information...</div>
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent mx-auto"
+          aria-hidden="true"
+        ></div>
+      </output>
     );
   }
 
@@ -142,7 +142,12 @@ const NewPaymentPage = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full sm:w-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="w-full sm:w-auto"
+            aria-label="Back to Dashboard"
+          >
             ← Back to Dashboard
           </Button>
         </div>
@@ -160,14 +165,20 @@ const NewPaymentPage = () => {
           )}
 
           {currentAccount && (
-            <div className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+            <div
+              className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800"
+              aria-label={`Paying from ${currentAccount.name}`}
+            >
               Paying from: <strong>{currentAccount.name}</strong>
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate aria-label="Make a payment form">
             <div className="mb-4">
-              <label htmlFor="merchantSearch" className="mb-1 block text-sm font-medium text-gray-700">Merchant *</label>
+              <label htmlFor="merchantSearch" className="mb-1 block text-sm font-medium text-gray-700">
+                Merchant <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
+              </label>
               <input
                 id="merchantSearch"
                 type="text"
@@ -177,32 +188,66 @@ const NewPaymentPage = () => {
                   if (selectedBusiness) setSelectedBusiness(null);
                 }}
                 placeholder="Type at least 2 characters to search..."
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                className={inputClasses}
                 disabled={submitting}
+                aria-required="true"
+                aria-autocomplete="list"
+                aria-controls="merchant-listbox"
               />
-              {merchantSearch.length >= 2 && filteredBusinesses.length > 0 && !selectedBusiness && (
-                <ul className="mt-1 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
-                  {filteredBusinesses.map((biz) => (
-                    <li key={biz.id} className="cursor-pointer px-3 py-2 hover:bg-gray-100" onClick={() => handleSelectBusiness(biz)}>
-                      <div className="font-medium">{biz.name}</div>
-                      <div className="text-xs text-gray-500">{biz.category}</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+
+                <input
+                    id="merchantSearch"
+                    type="text"
+                    list="merchant-listbox"
+                    value={merchantSearch}
+                    onChange={(e) => {
+                      setMerchantSearch(e.target.value);
+                      if (selectedBusiness) setSelectedBusiness(null);
+                      const match = allBusinesses.find(biz => biz.name === e.target.value);
+                      if (match) handleSelectBusiness(match);
+                    }}
+                    placeholder="Type at least 2 characters to search..."
+                    className={inputClasses}
+                    disabled={submitting}
+                    aria-required="true"
+                    autoComplete="off"
+                  />
+                  <datalist id="merchant-listbox">
+                    {filteredBusinesses.map((biz) => (
+                      <option key={biz.id} value={biz.name}>
+                        {biz.category}
+                      </option>
+                    ))}
+                  </datalist>
+
               {merchantSearch.length >= 2 && filteredBusinesses.length === 0 && !selectedBusiness && (
-                <p className="mt-1 text-sm text-gray-500">No matching merchants found.</p>
+                <output className="mt-1 text-sm text-gray-500 block">
+                  No matching merchants found.
+                </output>
               )}
               {selectedBusiness && (
-                <div className="mt-1 flex items-center justify-between rounded-md bg-gray-100 px-3 py-2">
+                <div
+                  className="mt-1 flex items-center justify-between rounded-md bg-gray-100 px-3 py-2"
+                  aria-live="polite"
+                >
                   <span>Selected: <strong>{selectedBusiness.name}</strong> ({selectedBusiness.category})</span>
-                  <button type="button" onClick={() => { setSelectedBusiness(null); setMerchantSearch(''); }} className="text-sm text-red-600 hover:underline">Change</button>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedBusiness(null); setMerchantSearch(''); }}
+                    className="text-sm text-red-600 hover:underline focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2 rounded"
+                    aria-label={`Remove selected merchant ${selectedBusiness.name}`}
+                  >
+                    Change
+                  </button>
                 </div>
               )}
             </div>
 
             <div className="mb-4">
-              <label htmlFor="amount" className="mb-1 block text-sm font-medium text-gray-700">Amount (£) *</label>
+              <label htmlFor="amount" className="mb-1 block text-sm font-medium text-gray-700">
+                Amount (£) <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
+              </label>
               <input
                 id="amount"
                 type="number"
@@ -211,24 +256,52 @@ const NewPaymentPage = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                className={inputClasses}
                 disabled={submitting}
+                aria-required="true"
+                aria-label="Payment amount in pounds"
               />
             </div>
 
-            <Button type="submit" variant="primary" loading={submitting} disabled={submitting || !currentAccount || !selectedBusiness || !amount} className="w-full">
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+              disabled={submitting || !currentAccount || !selectedBusiness || !amount}
+              className="w-full"
+              aria-label="Submit payment"
+            >
               Pay Now
             </Button>
           </form>
         </Card>
       </div>
 
-      <Modal isOpen={showPendingModal} onClose={() => setShowPendingModal(false)} title="Awaiting Guardian Approval">
+      <Modal
+        isOpen={showPendingModal}
+        onClose={() => setShowPendingModal(false)}
+        title="Awaiting Guardian Approval"
+      >
         <div className="space-y-4">
-          <p className="text-gray-700">{pendingMessage || 'This transaction has been sent to your guardian for approval.'}</p>
-          <p className="text-sm text-gray-500">You will be notified once a decision is made. No money has been moved yet.</p>
+          <p className="text-gray-700">
+            {pendingMessage || 'This transaction has been sent to your guardian for approval.'}
+          </p>
+          <p className="text-sm text-gray-500">
+            You will be notified once a decision is made. No money has been moved yet.
+          </p>
           <div className="flex justify-end">
-            <Button variant="primary" onClick={() => { setShowPendingModal(false); setAmount(''); setSelectedBusiness(null); setMerchantSearch(''); }}>OK</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setShowPendingModal(false);
+                setAmount('');
+                setSelectedBusiness(null);
+                setMerchantSearch('');
+              }}
+              aria-label="Acknowledge and close"
+            >
+              OK
+            </Button>
           </div>
         </div>
       </Modal>

@@ -1,5 +1,4 @@
-// src/components/ui/Alert.jsx
-import React from 'react';
+import PropTypes from 'prop-types';
 
 const Alert = ({ type = 'info', message, onDismiss }) => {
   const variants = {
@@ -89,6 +88,12 @@ const Alert = ({ type = 'info', message, onDismiss }) => {
       </div>
     </div>
   );
+};
+
+Alert.propTypes = {
+  type: PropTypes.oneOf(['success', 'error', 'warning', 'info']),
+  message: PropTypes.string.isRequired,
+  onDismiss: PropTypes.func,
 };
 
 export default Alert;

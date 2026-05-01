@@ -53,13 +53,17 @@ const GuardianTransactionsPage = () => {
   const formatCurrency = (amount) => {
     const num = parseFloat(amount);
     if (isNaN(num)) return '£0.00';
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2 }).format(num);
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency', currency: 'GBP', minimumFractionDigits: 2,
+    }).format(num);
   };
 
   if (loading && managedAccounts.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">Loading...</div>
+        <output className="text-center block" aria-label="Loading transactions">
+          <div aria-hidden="true">Loading...</div>
+        </output>
       </div>
     );
   }
@@ -68,7 +72,12 @@ const GuardianTransactionsPage = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/guardian')} className="w-full sm:w-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/guardian')}
+            className="w-full sm:w-auto"
+            aria-label="Back to Guardian Dashboard"
+          >
             ← Back to Dashboard
           </Button>
         </div>
@@ -81,27 +90,59 @@ const GuardianTransactionsPage = () => {
           ) : (
             <>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder</label>
-                <select value={selectedAccountId} onChange={(e) => setSelectedAccountId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
-                  {managedAccounts.map(acc => <option key={acc.id} value={acc.id}>{acc.username}</option>)}
+                <label htmlFor="accountSelect" className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Holder
+                </label>
+                <select
+                  id="accountSelect"
+                  value={selectedAccountId}
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+                  aria-label="Select account holder to view transactions"
+                >
+                  {managedAccounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.username}</option>
+                  ))}
                 </select>
               </div>
 
-              {loading && <div className="flex justify-center py-8"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div></div>}
+              {loading && (
+                <div className="flex justify-center py-8">
+                  <output aria-label="Loading transaction history">
+                    <div
+                      className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"
+                      aria-hidden="true"
+                    ></div>
+                  </output>
+                </div>
+              )}
 
-              {!loading && transactions.length === 0 ? (
-                <p className="py-8 text-center text-gray-500">No transactions found for this account holder.</p>
-              ) : (
-                !loading && (
-                  <div className="space-y-3">
-                    {transactions.map((tx, idx) => (
-                      <div key={tx.id || idx} className="flex flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                        <div className="font-medium text-gray-900">{tx.merchant || 'Unknown merchant'}</div>
-                        <div className="font-semibold text-gray-900">{formatCurrency(tx.amount)}</div>
+              {!loading && transactions.length === 0 && (
+                <p className="py-8 text-center text-gray-500">
+                  No transactions found for this account holder.
+                </p>
+              )}
+
+              {!loading && transactions.length > 0 && (
+                <ul className="space-y-3 list-none p-0" aria-label="Transaction history">
+                  {transactions.map((tx, idx) => (
+                    <li
+                      key={tx.id || idx}
+                      className="flex flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                      aria-label={`Transaction: ${tx.merchant || 'Unknown merchant'}, ${formatCurrency(tx.amount)}`}
+                    >
+                      <div className="font-medium text-gray-900">
+                        {tx.merchant || 'Unknown merchant'}
                       </div>
-                    ))}
-                  </div>
-                )
+                      <div
+                        className="font-semibold text-gray-900"
+                        aria-label={`Amount: ${formatCurrency(tx.amount)}`}
+                      >
+                        {formatCurrency(tx.amount)}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </>
           )}

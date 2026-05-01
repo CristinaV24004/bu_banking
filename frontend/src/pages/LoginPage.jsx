@@ -45,7 +45,6 @@ const LoginPage = () => {
         setLoading(false);
         return;
       }
-
       try {
         const userRes = await axiosInstance.get('/auth/user/');
         const isGuardian = userRes.data.user?.is_guardian === true;
@@ -64,61 +63,72 @@ const LoginPage = () => {
   };
 
   return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] px-4 py-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex flex-col items-center">
-            <img src={logoFull} alt="Guardian Vault" className="h-24 w-auto mb-4" />
-            <div className="flex flex-col items-center leading-tight">
-              <span className="font-cinzel font-semibold text-[#0D2B55] text-xl">Guardian</span>
-              <span className="font-cinzel font-bold text-[#C9992A] text-xl tracking-widest">VAULT</span>
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center">
+          <img
+            src={logoFull}
+            alt="Guardian Vault logo"
+            className="h-24 w-auto mb-4"
+          />
+          <div className="flex flex-col items-center leading-tight" aria-hidden="true">
+            <span className="font-cinzel font-semibold text-[#0D2B55] text-xl">Guardian</span>
+            <span className="font-cinzel font-bold text-[#C9992A] text-xl tracking-widest">VAULT</span>
           </div>
         </div>
         <Card title="Sign In" className="w-full">
-        <form onSubmit={handleSubmit}>
-          {error && (
+          <form onSubmit={handleSubmit} noValidate aria-label="Sign in form">
+            {error && (
+              <div className="mb-4">
+                <Alert type="error" message={error} onDismiss={() => setError('')} />
+              </div>
+            )}
             <div className="mb-4">
-              <Alert type="error" message={error} onDismiss={() => setError('')} />
+              <label htmlFor="username" className="mb-1 block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+                disabled={loading}
+                autoComplete="username"
+                aria-required="true"
+              />
             </div>
-          )}
-          <div className="mb-4">
-            <label htmlFor="username" className="mb-1 block text-sm font-medium text-gray-700">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              disabled={loading}
-            />
+            <div className="mb-4">
+              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+                disabled={loading}
+                autoComplete="current-password"
+                aria-required="true"
+              />
+            </div>
+            <Button type="submit" variant="primary" loading={loading} disabled={loading} className="w-full">
+              Sign In
+            </Button>
+          </form>
+          <div className="mt-4 text-center text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link
+              to="/register"
+              className="text-[#0D2B55] font-semibold hover:text-[#C9992A] hover:underline focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2 rounded"
+            >
+              Register
+            </Link>
           </div>
-          <div className="mb-4">
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              disabled={loading}
-            />
-          </div>
-          <Button type="submit" variant="primary" loading={loading} disabled={loading} className="w-full">
-            Sign In
-          </Button>
-        </form>
-        <div className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Register
-          </Link>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
-  </div>  
   );
 };
 
