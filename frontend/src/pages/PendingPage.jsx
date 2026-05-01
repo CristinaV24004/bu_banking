@@ -15,8 +15,7 @@ const PendingPage = () => {
     const fetchPending = async () => {
       try {
         setError(null);
-        const response = await axiosInstance.get('/guardian/my-pending/');
-        // response.data structure: { pending_transactions: [...] }
+        const response = await axiosInstance.get('/guardian/pending-reviews/');
         const pendingList = response.data.pending_transactions || [];
         setTransactions(pendingList);
       } catch (err) {
@@ -26,28 +25,19 @@ const PendingPage = () => {
         setLoading(false);
       }
     };
-
     fetchPending();
   }, []);
 
   const formatCurrency = (amount) => {
-    const num = Number.parseFloat(amount);
-    if (Number.isNaN(num)) return '£0.00';
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: 2,
-    }).format(num);
+    const num = parseFloat(amount);
+    if (isNaN(num)) return '£0.00';
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2 }).format(num);
   };
 
   const formatDate = (isoString) => {
     if (!isoString) return 'Date pending';
     const date = new Date(isoString);
-    return date.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   if (loading) {
@@ -62,11 +52,10 @@ const PendingPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-3xl">
-        {/* Back button */}
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full sm:w-auto">
             ← Back to Dashboard
           </Button>
         </div>
@@ -77,37 +66,21 @@ const PendingPage = () => {
               <Alert type="error" message={error} onDismiss={() => setError(null)} />
             </div>
           )}
-
           {!error && transactions.length === 0 ? (
-            <p className="py-8 text-center text-gray-500">
-              You have no transactions awaiting approval.
-            </p>
+            <p className="py-8 text-center text-gray-500">You have no transactions awaiting approval.</p>
           ) : (
             <>
-              <div className="mb-3 text-sm text-gray-500">
-                Total pending: {transactions.length}
-              </div>
+              <div className="mb-3 text-sm text-gray-500">Total pending: {transactions.length}</div>
               <div className="space-y-3">
                 {transactions.map((tx) => (
-                  <div
-                    key={tx.pending_id}
-                    className="flex flex-wrap items-center justify-between rounded-lg border border-gray-100 bg-white p-4 shadow-sm"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
-                        {tx.merchant || 'Unknown merchant'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {formatDate(tx.created_at)}
-                      </div>
+                  <div key={tx.pending_id} className="flex flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{tx.merchant || 'Unknown merchant'}</div>
+                      <div className="text-xs text-gray-500">{formatDate(tx.created_at)}</div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="font-semibold text-gray-900">
-                        {formatCurrency(tx.amount)}
-                      </div>
-                      <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
-                        Awaiting Approval
-                      </span>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <div className="font-semibold text-gray-900">{formatCurrency(tx.amount)}</div>
+                      <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Awaiting Approval</span>
                     </div>
                   </div>
                 ))}

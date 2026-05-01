@@ -11,22 +11,20 @@ const TransactionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [setAccounts] = useState([]);
 
-  // Fetch user accounts on mount
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
         setError(null);
         const accountsRes = await axiosInstance.get('/accounts/');
         let userAccounts = accountsRes.data;
-
         if (!userAccounts || userAccounts.length === 0) {
           setError('No accounts found.');
           setLoading(false);
           return;
         }
-        
-        // Find the first "current" account, fallback to first account
+        setAccounts(userAccounts);
         const currentAccount = userAccounts.find(acc => acc.account_type === 'current') || userAccounts[0];
         setSelectedAccount(currentAccount);
         await fetchTransactions(currentAccount.id);
@@ -36,12 +34,10 @@ const TransactionsPage = () => {
         setLoading(false);
       }
     };
-
     const fetchTransactions = async (accountId) => {
       try {
         setLoading(true);
         const txRes = await axiosInstance.get(`/transactions/account/${accountId}/`);
-        // Sort newest first (by timestamp descending)
         const sorted = [...txRes.data].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setTransactions(sorted);
       } catch (err) {
@@ -51,29 +47,18 @@ const TransactionsPage = () => {
         setLoading(false);
       }
     };
-
     fetchAccounts();
   }, []);
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
-    return date.toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const formatCurrency = (amount) => {
     const num = parseFloat(amount);
     if (isNaN(num)) return '£0.00';
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: 2,
-    }).format(num);
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2 }).format(num);
   };
 
   const getStatusBadge = (paymentStatus) => {
@@ -83,11 +68,7 @@ const TransactionsPage = () => {
       rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800' },
     };
     const status = statusMap[paymentStatus] || { label: 'Unknown', color: 'bg-gray-100 text-gray-800' };
-    return (
-      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${status.color}`}>
-        {status.label}
-      </span>
-    );
+    return <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${status.color}`}>{status.label}</span>;
   };
 
   if (loading) {
@@ -102,11 +83,10 @@ const TransactionsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl">
-        {/* Header with back button */}
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="w-full sm:w-auto">
             ← Back to Dashboard
           </Button>
         </div>
@@ -128,27 +108,16 @@ const TransactionsPage = () => {
             <p className="py-8 text-center text-gray-500">No transactions found for this account.</p>
           ) : (
             <>
-              <div className="mb-3 text-sm text-gray-500">
-                Total transactions: {transactions.length}
-              </div>
+              <div className="mb-3 text-sm text-gray-500">Total transactions: {transactions.length}</div>
               <div className="space-y-3">
                 {transactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex flex-wrap items-center justify-between rounded-lg border border-gray-100 bg-white p-4 shadow-sm"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
-                        {tx.merchant_name || tx.transaction_type || 'Transaction'}
-                      </div>
+                  <div key={tx.id} className="flex flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{tx.merchant_name || tx.transaction_type || 'Transaction'}</div>
                       <div className="text-xs text-gray-500">{formatDate(tx.timestamp)}</div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="font-semibold text-gray-900">
-                          {formatCurrency(tx.amount)}
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <div className="font-semibold text-gray-900">{formatCurrency(tx.amount)}</div>
                       {getStatusBadge(tx.payment_status)}
                     </div>
                   </div>

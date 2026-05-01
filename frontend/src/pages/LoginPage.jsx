@@ -1,4 +1,3 @@
-// src/pages/LoginPage.jsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -46,20 +45,15 @@ const LoginPage = () => {
         return;
       }
 
-      // After successful login, fetch user role to determine redirect
       try {
         const userRes = await axiosInstance.get('/auth/user/');
-        const isGuardian = userRes.data.user.is_guardian === true;
+        const isGuardian = userRes.data.is_guardian === true;
         if (isGuardian) {
-          setLoading(false);
           navigate('/guardian');
         } else {
-          setLoading(false);
           navigate('/dashboard');
         }
-      } catch (roleErr) {
-        console.warn('Role fetch failed, defaulting to dashboard:', roleErr);
-        setLoading(false);
+      } catch {
         navigate('/dashboard');
       }
     } catch (err) {
@@ -69,7 +63,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
       <Card title="Sign In" className="w-full max-w-md">
         <form onSubmit={handleSubmit}>
           {error && (

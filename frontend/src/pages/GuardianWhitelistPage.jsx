@@ -1,4 +1,3 @@
-// src/pages/GuardianWhitelistPage.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../api/axiosInstance';
@@ -15,13 +14,8 @@ const GuardianWhitelistPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newRule, setNewRule] = useState({
-    merchant_name: '',
-    category: '',
-    rule_type: 'require_approval',
-  });
+  const [newRule, setNewRule] = useState({ merchant_name: '', category: '', rule_type: 'require_approval' });
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
 
@@ -29,14 +23,27 @@ const GuardianWhitelistPage = () => {
     const fetchAccountHolders = async () => {
       try {
         setError(null);
-        const response = await axiosInstance.get('/guardian/managed-accounts/');
-        const holders = response.data.managed_accounts || [];
-        setAccountHolders(holders);
-        if (holders.length > 0) {
-          setSelectedAccountHolderId(holders[0].id);
+        const response = await axiosInstance.get('/guardian/pending-reviews/');
+        const transactions = response.data.pending_transactions || [];
+        const uniqueHolders = [];
+        const seen = new Set();
+        for (const tx of transactions) {
+          if (tx.account_holder_id && !seen.has(tx.account_holder_id)) {
+            seen.add(tx.account_holder_id);
+            uniqueHolders.push({ id: tx.account_holder_id, username: tx.account_holder || `User ${tx.account_holder_id}` });
+          }
         }
+        if (uniqueHolders.length === 0) {
+          const userRes = await axiosInstance.get('/auth/user/');
+          const managed = userRes.data.managed_accounts || [];
+          for (const acc of managed) {
+            uniqueHolders.push({ id: acc.id, username: acc.username });
+          }
+        }
+        setAccountHolders(uniqueHolders);
+        if (uniqueHolders.length > 0) setSelectedAccountHolderId(uniqueHolders[0].id);
       } catch (err) {
-        console.error('Failed to fetch managed accounts:', err);
+        console.error('Failed to fetch account holders:', err);
         setError('Unable to load your managed account holders.');
       } finally {
         setLoading(false);
@@ -68,7 +75,6 @@ const GuardianWhitelistPage = () => {
       setSuccessMessage('Rule deleted successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('Failed to delete rule:', err);
       setError('Failed to delete rule. Please try again.');
       setTimeout(() => setError(null), 3000);
     }
@@ -92,10 +98,7 @@ const GuardianWhitelistPage = () => {
     setModalLoading(true);
     setModalError('');
     try {
-      const response = await axiosInstance.post(
-        `/guardian/${selectedAccountHolderId}/whitelist/`,
-        newRule
-      );
+      const response = await axiosInstance.post(`/guardian/${selectedAccountHolderId}/whitelist/`, newRule);
       setRules([...rules, response.data]);
       setShowAddModal(false);
       setSuccessMessage('Rule added successfully.');
@@ -114,65 +117,38 @@ const GuardianWhitelistPage = () => {
       require_approval: { label: 'Require Approval', color: 'bg-yellow-100 text-yellow-800' },
     };
     const info = types[ruleType] || { label: ruleType, color: 'bg-gray-100 text-gray-800' };
-    return (
-      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${info.color}`}>
-        {info.label}
-      </span>
-    );
+    return <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${info.color}`}>{info.label}</span>;
   };
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="mb-4 text-gray-600">Loading...</div>
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-        </div>
+        <div className="text-center">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl">
-
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/guardian')}>
+          <Button variant="ghost" onClick={() => navigate('/guardian')} className="w-full sm:w-auto">
             ← Back to Dashboard
           </Button>
         </div>
 
         <Card title="Merchant Whitelist Management">
-          {error && (
-            <div className="mb-4">
-              <Alert type="error" message={error} onDismiss={() => setError(null)} />
-            </div>
-          )}
-          {successMessage && (
-            <div className="mb-4">
-              <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />
-            </div>
-          )}
+          {error && <Alert type="error" message={error} onDismiss={() => setError(null)} />}
+          {successMessage && <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />}
 
           {accountHolders.length === 0 ? (
             <p className="py-4 text-center text-gray-500">No account holders managed.</p>
           ) : (
             <>
               <div className="mb-4">
-                <label htmlFor="accountHolder" className="mb-1 block text-sm font-medium text-gray-700">
-                  Select Account Holder
-                </label>
-                <select
-                  id="accountHolder"
-                  value={selectedAccountHolderId}
-                  onChange={(e) => setSelectedAccountHolderId(e.target.value)}
-                  className="rounded-md border border-gray-300 px-3 py-2"
-                >
-                  {accountHolders.map((holder) => (
-                    <option key={holder.id} value={holder.id}>
-                      {holder.username}
-                    </option>
-                  ))}
+                <label htmlFor="accountHolder" className="block text-sm font-medium text-gray-700 mb-1">Select Account Holder</label>
+                <select id="accountHolder" value={selectedAccountHolderId} onChange={(e) => setSelectedAccountHolderId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
+                  {accountHolders.map(holder => <option key={holder.id} value={holder.id}>{holder.username}</option>)}
                 </select>
               </div>
 
@@ -181,25 +157,18 @@ const GuardianWhitelistPage = () => {
               </div>
 
               {rules.length === 0 ? (
-                <p className="py-4 text-center text-gray-500">
-                  No whitelist rules for this account holder.
-                </p>
+                <p className="py-4 text-center text-gray-500">No whitelist rules for this account holder.</p>
               ) : (
                 <div className="space-y-3">
-                  {rules.map((rule) => (
-                    <div
-                      key={rule.id}
-                      className="flex flex-wrap items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-                    >
+                  {rules.map(rule => (
+                    <div key={rule.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                       <div>
                         <div className="font-medium text-gray-900">{rule.merchant_name}</div>
                         <div className="text-sm text-gray-500">{rule.category}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         {getRuleTypeBadge(rule.rule_type)}
-                        <Button variant="danger" onClick={() => handleDeleteRule(rule.id)}>
-                          Delete
-                        </Button>
+                        <Button variant="danger" size="sm" onClick={() => handleDeleteRule(rule.id)}>Delete</Button>
                       </div>
                     </div>
                   ))}
@@ -210,61 +179,28 @@ const GuardianWhitelistPage = () => {
         </Card>
       </div>
 
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title="Add Whitelist Rule"
-      >
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Whitelist Rule">
         <div className="space-y-4">
           <div>
-            <label htmlFor="merchant_name" className="block text-sm font-medium text-gray-700">
-              Merchant Name *
-            </label>
-            <input
-              id="merchant_name"
-              type="text"
-              value={newRule.merchant_name}
-              onChange={(e) => setNewRule({ ...newRule, merchant_name: e.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            />
+            <label className="block text-sm font-medium text-gray-700">Merchant Name *</label>
+            <input type="text" value={newRule.merchant_name} onChange={(e) => setNewRule({ ...newRule, merchant_name: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
           </div>
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-              Category *
-            </label>
-            <input
-              id="category"
-              type="text"
-              value={newRule.category}
-              onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            />
+            <label className="block text-sm font-medium text-gray-700">Category *</label>
+            <input type="text" value={newRule.category} onChange={(e) => setNewRule({ ...newRule, category: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
           </div>
           <div>
-            <label htmlFor="rule_type" className="block text-sm font-medium text-gray-700">
-              Rule Type
-            </label>
-            <select
-              id="rule_type"
-              value={newRule.rule_type}
-              onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-            >
+            <label className="block text-sm font-medium text-gray-700">Rule Type</label>
+            <select value={newRule.rule_type} onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
               <option value="allow">Allow</option>
               <option value="block">Block</option>
               <option value="require_approval">Require Approval</option>
             </select>
           </div>
-          {modalError && (
-            <Alert type="error" message={modalError} onDismiss={() => setModalError('')} />
-          )}
+          {modalError && <Alert type="error" message={modalError} />}
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setShowAddModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" loading={modalLoading} onClick={handleAddRule}>
-              Save Rule
-            </Button>
+            <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button variant="primary" loading={modalLoading} onClick={handleAddRule}>Save Rule</Button>
           </div>
         </div>
       </Modal>
