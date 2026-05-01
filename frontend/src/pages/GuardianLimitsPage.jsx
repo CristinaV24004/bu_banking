@@ -121,7 +121,7 @@ const GuardianLimitsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-6">
           <Button
             variant="ghost"

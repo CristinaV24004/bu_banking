@@ -17,6 +17,8 @@ const GuardianDashboard = () => {
   const { pendingCount, pendingTransactions, loading: pollingLoading, error: pollingError } = usePendingPolling();
   const [managedAccountHolders, setManagedAccountHolders] = useState([]);
   const [newTransactionAlert, setNewTransactionAlert] = useState(false);
+  const [cardData, setCardData] = useState(null);
+  const [cardError, setCardError] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,6 +46,17 @@ const GuardianDashboard = () => {
     };
     fetchProfile();
   }, []);
+
+    const fetchCards = async () => {
+      try {
+        const res = await axiosInstance.get('/cards/balance/');
+        setCardData(res.data);
+      } catch (err) {
+        const message = err.response?.data?.error || 'Could not load card balances.';
+        setCardError(message);
+      }
+    };
+    fetchCards();
 
   useEffect(() => {
     const handler = () => setNewTransactionAlert(true);
@@ -142,18 +155,16 @@ const GuardianDashboard = () => {
           </div>
         )}
 
-        <section aria-label="Overview" className="mb-6 grid gap-4 sm:grid-cols-2 mx-auto w-full">
-          <Card title="Overview">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total pending approvals:</span>
-                <span
-                  className="text-2xl font-bold text-blue-600"
-                  aria-label={`${pendingCount} pending approvals`}
-                >
-                  {pendingCount}
-                </span>
-              </div>
+        <section aria-label="Overview" className="mb-6 flex justify-center">
+          <Card title="Overview" className="w-full max-w-sm">
+            <div className="flex flex-col items-center gap-3 py-2">
+              <span className="text-gray-600">Total pending approvals</span>
+              <span
+                className="text-4xl font-bold text-[#0D2B55]"
+                aria-label={`${pendingCount} pending approvals`}
+              >
+                {pendingCount}
+              </span>
             </div>
           </Card>
         </section>
@@ -195,8 +206,57 @@ const GuardianDashboard = () => {
           </Button>
         </nav>
 
+        {/* NFC Cards */}
+        <section aria-label="NFC card balances" className="mt-8">
+          <h2 className="mb-4 text-lg font-semibold text-[#0D2B55]">Issued Cards</h2>
+          {cardError && (
+            <Alert type="error" message={cardError} />
+          )}
+          {cardData && (
+            <>
+              <div className="mb-4 flex justify-between text-sm text-[#4A5568]">
+                <span>Total spendable: <strong className="text-[#0D2B55]">
+                  £{cardData.current_spendable.toFixed(2)}
+                </strong></span>
+                <span>Cards issued: <strong className="text-[#0D2B55]">
+                  {cardData.cards.length}
+                </strong></span>
+              </div>
+              <ul className="grid gap-4 sm:grid-cols-2 list-none p-0">
+                {cardData.cards
+                  .filter(card => card.card_number.startsWith('3'))
+                  .sort((a, b) => a.card_number.localeCompare(b.card_number))
+                  .map((card) => (
+                    <li key={card.card_number}>
+                      <div className="rounded-lg border border-[#CBD5E1] bg-white p-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-cinzel text-sm text-[#4A5568]">
+                            •••• {card.card_number.slice(-4)}
+                          </span>
+                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${card.balance > 0
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                            }`}>
+                            {card.balance > 0 ? 'Active' : 'Spent'}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-2xl font-bold text-[#0D2B55]">
+                          £{card.balance.toFixed(2)}
+                        </div>
+                        <div className="mt-1 text-xs text-[#4A5568]">
+                          of £{card.starting_balance.toFixed(2)} starting balance
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </>
+          )}
+        </section>
       </div>
     </div>
+
+    
   );
 };
 

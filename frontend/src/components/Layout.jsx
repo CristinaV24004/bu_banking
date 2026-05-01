@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
     </a>
       <div className="min-h-screen bg-[#F4F7FB]">
         <Navbar />
-        <main id="main-content" className="pt-16 flex flex-col items-center" tabIndex={-1}>
+        <main id="main-content" className="pt-16 w-full" tabIndex={-1}>
           {children}
         </main>
       </div>
