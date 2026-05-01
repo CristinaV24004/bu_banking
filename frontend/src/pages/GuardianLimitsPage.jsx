@@ -9,7 +9,12 @@ const GuardianLimitsPage = () => {
   const navigate = useNavigate();
   const [managedAccounts, setManagedAccounts] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [limits, setLimits] = useState({ daily_limit: '', allow_late_night: false, quiet_hours_start: 22, quiet_hours_end: 6 });
+  const [limits, setLimits] = useState({
+    daily_limit: '',
+    allow_late_night: false,
+    quiet_hours_start: 22,
+    quiet_hours_end: 6,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -102,10 +107,14 @@ const GuardianLimitsPage = () => {
     }
   };
 
+  const inputClasses = "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2";
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">Loading...</div>
+        <output className="text-center block" aria-label="Loading limits">
+          <div aria-hidden="true">Loading...</div>
+        </output>
       </div>
     );
   }
@@ -114,49 +123,125 @@ const GuardianLimitsPage = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/guardian')} className="w-full sm:w-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/guardian')}
+            className="w-full sm:w-auto"
+            aria-label="Back to Guardian Dashboard"
+          >
             ← Back to Dashboard
           </Button>
         </div>
 
         <Card title="Configure Safe Spend Limits">
           {error && <Alert type="error" message={error} onDismiss={() => setError(null)} />}
-          {successMessage && <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />}
+          {successMessage && (
+            <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />
+          )}
 
           {managedAccounts.length === 0 ? (
             <p className="py-4 text-center text-gray-500">No managed account holders found.</p>
           ) : (
             <>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder</label>
-                <select value={selectedAccountId} onChange={(e) => setSelectedAccountId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
-                  {managedAccounts.map(acc => <option key={acc.id} value={acc.id}>{acc.username}</option>)}
+                <label htmlFor="accountSelect" className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Holder
+                </label>
+                <select
+                  id="accountSelect"
+                  value={selectedAccountId}
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                  className={inputClasses}
+                  aria-label="Select account holder to configure limits"
+                >
+                  {managedAccounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.username}</option>
+                  ))}
                 </select>
               </div>
 
-              <div className="space-y-4">
+              <fieldset className="space-y-4">
+                <legend className="sr-only">Safe spend limit settings</legend>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Daily Limit (£)</label>
-                  <input type="number" step="0.01" min="0.01" name="daily_limit" value={limits.daily_limit} onChange={handleInputChange} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
+                  <label htmlFor="daily_limit" className="block text-sm font-medium text-gray-700">
+                    Daily Limit (£)
+                  </label>
+                  <input
+                    id="daily_limit"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    name="daily_limit"
+                    value={limits.daily_limit}
+                    onChange={handleInputChange}
+                    className={inputClasses}
+                    aria-label="Daily spending limit in pounds"
+                  />
                 </div>
-                <div className="flex items-center">
-                  <input type="checkbox" name="allow_late_night" checked={limits.allow_late_night} onChange={handleInputChange} className="h-4 w-4 rounded border-gray-300 text-blue-600" />
-                  <label className="ml-2 block text-sm text-gray-700">Allow late night transactions (overrides quiet hours)</label>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    id="allow_late_night"
+                    type="checkbox"
+                    name="allow_late_night"
+                    checked={limits.allow_late_night}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+                  />
+                  <label htmlFor="allow_late_night" className="block text-sm text-gray-700">
+                    Allow late night transactions (overrides quiet hours)
+                  </label>
                 </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Quiet Hours Start (0-23)</label>
-                    <input type="number" min="0" max="23" name="quiet_hours_start" value={limits.quiet_hours_start} onChange={handleInputChange} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
+                    <label htmlFor="quiet_hours_start" className="block text-sm font-medium text-gray-700">
+                      Quiet Hours Start (0-23)
+                    </label>
+                    <input
+                      id="quiet_hours_start"
+                      type="number"
+                      min="0"
+                      max="23"
+                      name="quiet_hours_start"
+                      value={limits.quiet_hours_start}
+                      onChange={handleInputChange}
+                      className={inputClasses}
+                      aria-label="Quiet hours start time (0-23 hour format)"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Quiet Hours End (0-23)</label>
-                    <input type="number" min="0" max="23" name="quiet_hours_end" value={limits.quiet_hours_end} onChange={handleInputChange} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
+                    <label htmlFor="quiet_hours_end" className="block text-sm font-medium text-gray-700">
+                      Quiet Hours End (0-23)
+                    </label>
+                    <input
+                      id="quiet_hours_end"
+                      type="number"
+                      min="0"
+                      max="23"
+                      name="quiet_hours_end"
+                      value={limits.quiet_hours_end}
+                      onChange={handleInputChange}
+                      className={inputClasses}
+                      aria-label="Quiet hours end time (0-23 hour format)"
+                    />
                   </div>
                 </div>
+
                 <div className="flex justify-end pt-4">
-                  <Button variant="primary" loading={saving} onClick={handleSave} disabled={saving} className="w-full sm:w-auto">Save Changes</Button>
+                  <Button
+                    variant="primary"
+                    loading={saving}
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full sm:w-auto"
+                    aria-label="Save safe spend limit changes"
+                  >
+                    Save Changes
+                  </Button>
                 </div>
-              </div>
+              </fieldset>
             </>
           )}
         </Card>

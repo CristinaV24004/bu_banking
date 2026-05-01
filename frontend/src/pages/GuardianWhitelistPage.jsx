@@ -30,7 +30,10 @@ const GuardianWhitelistPage = () => {
         for (const tx of transactions) {
           if (tx.account_holder_id && !seen.has(tx.account_holder_id)) {
             seen.add(tx.account_holder_id);
-            uniqueHolders.push({ id: tx.account_holder_id, username: tx.account_holder || `User ${tx.account_holder_id}` });
+            uniqueHolders.push({
+              id: tx.account_holder_id,
+              username: tx.account_holder || `User ${tx.account_holder_id}`,
+            });
           }
         }
         if (uniqueHolders.length === 0) {
@@ -67,15 +70,16 @@ const GuardianWhitelistPage = () => {
     fetchRules();
   }, [selectedAccountHolderId]);
 
-  const handleDeleteRule = async (ruleId) => {
-    if (!window.confirm('Are you sure you want to delete this rule?')) return;
+  const handleDeleteRule = async (ruleId, merchantName) => {
+    if (!window.confirm(`Are you sure you want to delete the rule for ${merchantName}?`)) return;
     try {
       await axiosInstance.delete(`/guardian/${selectedAccountHolderId}/whitelist/${ruleId}/`);
       setRules(rules.filter(rule => rule.id !== ruleId));
       setSuccessMessage('Rule deleted successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError('Failed to delete rule. Please try again.');
+      const message = err.response?.data?.error || 'Failed to delete rule. Please try again.';
+      setError(message);
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -98,7 +102,10 @@ const GuardianWhitelistPage = () => {
     setModalLoading(true);
     setModalError('');
     try {
-      const response = await axiosInstance.post(`/guardian/${selectedAccountHolderId}/whitelist/`, newRule);
+      const response = await axiosInstance.post(
+        `/guardian/${selectedAccountHolderId}/whitelist/`,
+        newRule
+      );
       setRules([...rules, response.data]);
       setShowAddModal(false);
       setSuccessMessage('Rule added successfully.');
@@ -117,13 +124,24 @@ const GuardianWhitelistPage = () => {
       require_approval: { label: 'Require Approval', color: 'bg-yellow-100 text-yellow-800' },
     };
     const info = types[ruleType] || { label: ruleType, color: 'bg-gray-100 text-gray-800' };
-    return <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${info.color}`}>{info.label}</span>;
+    return (
+      <span
+        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${info.color}`}
+        aria-label={`Rule type: ${info.label}`}
+      >
+        {info.label}
+      </span>
+    );
   };
+
+  const inputClasses = "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2";
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">Loading...</div>
+        <output className="text-center block" aria-label="Loading whitelist">
+          <div aria-hidden="true">Loading...</div>
+        </output>
       </div>
     );
   }
@@ -132,47 +150,82 @@ const GuardianWhitelistPage = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <Button variant="ghost" onClick={() => navigate('/guardian')} className="w-full sm:w-auto">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/guardian')}
+            className="w-full sm:w-auto"
+            aria-label="Back to Guardian Dashboard"
+          >
             ← Back to Dashboard
           </Button>
         </div>
 
         <Card title="Merchant Whitelist Management">
           {error && <Alert type="error" message={error} onDismiss={() => setError(null)} />}
-          {successMessage && <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />}
+          {successMessage && (
+            <Alert type="success" message={successMessage} onDismiss={() => setSuccessMessage('')} />
+          )}
 
           {accountHolders.length === 0 ? (
             <p className="py-4 text-center text-gray-500">No account holders managed.</p>
           ) : (
             <>
               <div className="mb-4">
-                <label htmlFor="accountHolder" className="block text-sm font-medium text-gray-700 mb-1">Select Account Holder</label>
-                <select id="accountHolder" value={selectedAccountHolderId} onChange={(e) => setSelectedAccountHolderId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
-                  {accountHolders.map(holder => <option key={holder.id} value={holder.id}>{holder.username}</option>)}
+                <label htmlFor="accountHolder" className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Account Holder
+                </label>
+                <select
+                  id="accountHolder"
+                  value={selectedAccountHolderId}
+                  onChange={(e) => setSelectedAccountHolderId(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+                  aria-label="Select account holder to manage whitelist"
+                >
+                  {accountHolders.map(holder => (
+                    <option key={holder.id} value={holder.id}>{holder.username}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="mb-4 flex justify-end">
-                <Button variant="primary" onClick={openAddModal}>+ Add Rule</Button>
+                <Button
+                  variant="primary"
+                  onClick={openAddModal}
+                  aria-label="Add new whitelist rule"
+                >
+                  + Add Rule
+                </Button>
               </div>
 
               {rules.length === 0 ? (
-                <p className="py-4 text-center text-gray-500">No whitelist rules for this account holder.</p>
+                <p className="py-4 text-center text-gray-500">
+                  No whitelist rules for this account holder.
+                </p>
               ) : (
-                <div className="space-y-3">
+                <ul className="space-y-3 list-none p-0" aria-label="Whitelist rules">
                   {rules.map(rule => (
-                    <div key={rule.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                    <li
+                      key={rule.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                      aria-label={`Rule for ${rule.merchant_name}: ${rule.rule_type}`}
+                    >
                       <div>
                         <div className="font-medium text-gray-900">{rule.merchant_name}</div>
                         <div className="text-sm text-gray-500">{rule.category}</div>
                       </div>
                       <div className="flex items-center gap-3">
                         {getRuleTypeBadge(rule.rule_type)}
-                        <Button variant="danger" size="sm" onClick={() => handleDeleteRule(rule.id)}>Delete</Button>
+                        <Button
+                          variant="danger"
+                          onClick={() => handleDeleteRule(rule.id, rule.merchant_name)}
+                          aria-label={`Delete rule for ${rule.merchant_name}`}
+                        >
+                          Delete
+                        </Button>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </>
           )}
@@ -182,16 +235,46 @@ const GuardianWhitelistPage = () => {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Whitelist Rule">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Merchant Name *</label>
-            <input type="text" value={newRule.merchant_name} onChange={(e) => setNewRule({ ...newRule, merchant_name: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
+            <label htmlFor="merchant_name" className="block text-sm font-medium text-gray-700">
+              Merchant Name <span aria-hidden="true">*</span>
+              <span className="sr-only">(required)</span>
+            </label>
+            <input
+              id="merchant_name"
+              type="text"
+              value={newRule.merchant_name}
+              onChange={(e) => setNewRule({ ...newRule, merchant_name: e.target.value })}
+              className={inputClasses}
+              aria-required="true"
+              autoComplete="off"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Category *</label>
-            <input type="text" value={newRule.category} onChange={(e) => setNewRule({ ...newRule, category: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2" />
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+              Category <span aria-hidden="true">*</span>
+              <span className="sr-only">(required)</span>
+            </label>
+            <input
+              id="category"
+              type="text"
+              value={newRule.category}
+              onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
+              className={inputClasses}
+              aria-required="true"
+              autoComplete="off"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Rule Type</label>
-            <select value={newRule.rule_type} onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2">
+            <label htmlFor="rule_type" className="block text-sm font-medium text-gray-700">
+              Rule Type
+            </label>
+            <select
+              id="rule_type"
+              value={newRule.rule_type}
+              onChange={(e) => setNewRule({ ...newRule, rule_type: e.target.value })}
+              className={inputClasses}
+              aria-label="Select rule type"
+            >
               <option value="allow">Allow</option>
               <option value="block">Block</option>
               <option value="require_approval">Require Approval</option>
@@ -199,8 +282,21 @@ const GuardianWhitelistPage = () => {
           </div>
           {modalError && <Alert type="error" message={modalError} />}
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
-            <Button variant="primary" loading={modalLoading} onClick={handleAddRule}>Save Rule</Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowAddModal(false)}
+              aria-label="Cancel adding rule"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              loading={modalLoading}
+              onClick={handleAddRule}
+              aria-label="Save new whitelist rule"
+            >
+              Save Rule
+            </Button>
           </div>
         </div>
       </Modal>

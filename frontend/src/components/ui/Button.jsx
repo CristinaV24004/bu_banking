@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 
 const Button = ({
@@ -11,12 +10,12 @@ const Button = ({
   className = '',
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
+    primary: 'bg-[#1A3F6F] text-white hover:bg-[#2E5FA3] hover:border hover:border-[#C9992A] focus:ring-[#C9992A]',
+    danger: 'bg-red-600 text-white hover:bg-red-700 hover:border hover:border-[#C9992A]',
+    ghost: 'bg-transparent text-[#0D2B55] border border-[#CBD5E1] hover:border-[#C9992A] hover:text-[#C9992A] focus:ring-[#C9992A]',
   };
 
   const variantClasses = variants[variant] || variants.primary;
@@ -28,6 +27,7 @@ const Button = ({
       disabled={disabled || loading}
       className={`${baseClasses} ${variantClasses} ${className}`}
       aria-busy={loading}
+      aria-disabled={disabled || loading}
     >
       {loading && (
         <svg
@@ -36,6 +36,7 @@ const Button = ({
           fill="none"
           viewBox="0 0 24 24"
           aria-hidden="true"
+          role="presentation"
         >
           <circle
             className="opacity-25"
@@ -57,8 +58,6 @@ const Button = ({
   );
 };
 
-export default Button;
-
 Button.propTypes = {
   children: PropTypes.node.isRequired,
   onClick: PropTypes.func,
@@ -68,3 +67,5 @@ Button.propTypes = {
   type: PropTypes.oneOf(['button', 'submit', 'reset']),
   className: PropTypes.string,
 };
+
+export default Button;

@@ -24,12 +24,14 @@ const GuardianDashboard = () => {
         const profileRes = await axiosInstance.get('/auth/user/');
         const userData = profileRes.data.user || profileRes.data;
         setGuardianProfile(userData);
-        // fetch managed account holders (could be from pending reviews or dedicated endpoint)
         const pendingRes = await axiosInstance.get('/guardian/pending-reviews/');
         const uniqueHolders = new Map();
         (pendingRes.data.pending_transactions || []).forEach(tx => {
           if (tx.account_holder_id && !uniqueHolders.has(tx.account_holder_id)) {
-            uniqueHolders.set(tx.account_holder_id, { id: tx.account_holder_id, username: tx.account_holder || `User ${tx.account_holder_id}` });
+            uniqueHolders.set(tx.account_holder_id, {
+              id: tx.account_holder_id,
+              username: tx.account_holder || `User ${tx.account_holder_id}`,
+            });
           }
         });
         setManagedAccountHolders(Array.from(uniqueHolders.values()));
@@ -49,10 +51,62 @@ const GuardianDashboard = () => {
     return () => window.removeEventListener('new-pending-transactions', handler);
   }, []);
 
+  const renderPendingTransactions = () => {
+    if (pollingLoading) {
+      return (
+        <output className="py-4 text-center block text-gray-500" aria-label="Loading transactions">
+          Loading...
+        </output>
+      );
+    }
+    if (pendingTransactions.length === 0) {
+      return (
+        <p className="py-4 text-center text-gray-500">
+          No transactions awaiting your review.
+        </p>
+      );
+    }
+    return (
+      <>
+        <ul className="space-y-3 list-none p-0" aria-label="Recent pending transactions">
+          {pendingTransactions.slice(0, 5).map((tx) => (
+            <li
+              key={tx.pending_id}
+              className="flex flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+              aria-label={`Pending: ${tx.merchant || 'Unknown merchant'}, ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(tx.amount)}`}
+            >
+              <div className="font-medium text-gray-900">
+                {tx.merchant || 'Unknown merchant'}
+              </div>
+              <div className="flex items-center justify-between gap-3 sm:justify-end">
+                <div className="font-semibold text-gray-900">
+                  {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(tx.amount)}
+                </div>
+                <span
+                  className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
+                  aria-label="Status: Pending"
+                >
+                  Pending
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {pendingTransactions.length > 5 && (
+          <p className="text-center text-sm text-gray-500" aria-live="polite">
+            +{pendingTransactions.length - 5} more pending
+          </p>
+        )}
+      </>
+    );
+  };
+
   if (loadingProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">Loading...</div>
+        <output className="text-center block" aria-label="Loading dashboard">
+          <div aria-hidden="true">Loading...</div>
+        </output>
       </div>
     );
   }
@@ -62,12 +116,15 @@ const GuardianDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Guardian Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {guardianProfile?.username || user?.username || 'Guardian'}</p>
+            <p className="text-gray-600">
+              Welcome back, {guardianProfile?.username || user?.username || 'Guardian'}
+            </p>
           </div>
-        </div>
+        </header>
 
         {(error || pollingError) && (
           <div className="mb-6">
@@ -85,16 +142,21 @@ const GuardianDashboard = () => {
           </div>
         )}
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
+        <section aria-label="Overview" className="mb-6 grid gap-4 sm:grid-cols-2 mx-auto w-full">
           <Card title="Overview">
             <div className="space-y-2">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total pending approvals:</span>
-                <span className="text-2xl font-bold text-blue-600">{pendingCount}</span>
+                <span
+                  className="text-2xl font-bold text-blue-600"
+                  aria-label={`${pendingCount} pending approvals`}
+                >
+                  {pendingCount}
+                </span>
               </div>
             </div>
           </Card>
-        </div>
+        </section>
 
         {firstAccountHolderId && (
           <div className="mb-6">
@@ -103,33 +165,36 @@ const GuardianDashboard = () => {
         )}
 
         <Card title="Recent Pending Transactions" className="mb-6">
-          {pollingLoading ? (
-            <p className="py-4 text-center text-gray-500">Loading...</p>
-          ) : pendingTransactions.length === 0 ? (
-            <p className="py-4 text-center text-gray-500">No transactions awaiting your review.</p>
-          ) : (
-            <div className="space-y-3">
-              {pendingTransactions.slice(0, 5).map((tx) => (
-                <div key={tx.pending_id} className="flex flex-col gap-3 rounded-lg border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                  <div className="font-medium text-gray-900">{tx.merchant || 'Unknown merchant'}</div>
-                  <div className="flex items-center justify-between gap-3 sm:justify-end">
-                    <div className="font-semibold text-gray-900">
-                      {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(tx.amount)}
-                    </div>
-                    <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Pending</span>
-                  </div>
-                </div>
-              ))}
-              {pendingTransactions.length > 5 && <p className="text-center text-sm text-gray-500">+{pendingTransactions.length - 5} more pending</p>}
-            </div>
-          )}
+          {renderPendingTransactions()}
         </Card>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Button variant="primary" onClick={() => navigate('/guardian/approvals')} className="w-full">Review Approvals</Button>
-          <Button variant="primary" onClick={() => navigate('/guardian/whitelist')} className="w-full">Manage Whitelist</Button>
-          <Button variant="primary" onClick={() => navigate('/guardian/limits')} className="w-full">Manage Limits</Button>
-        </div>
+        <nav className="grid gap-3 sm:grid-cols-3 mx-auto w-full" aria-label="Guardian actions">
+          <Button
+            variant="primary"
+            onClick={() => navigate('/guardian/approvals')}
+            className="w-full"
+            aria-label="Review pending approvals"
+          >
+            Review Approvals
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/guardian/whitelist')}
+            className="w-full"
+            aria-label="Manage merchant whitelist"
+          >
+            Manage Whitelist
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => navigate('/guardian/limits')}
+            className="w-full"
+            aria-label="Manage safe spend limits"
+          >
+            Manage Limits
+          </Button>
+        </nav>
+
       </div>
     </div>
   );
