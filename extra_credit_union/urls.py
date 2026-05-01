@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from banking.auth_views import LoginView, UserAccountsView
 from banking.template_views import register_api
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('banking.urls')),

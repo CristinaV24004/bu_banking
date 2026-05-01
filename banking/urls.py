@@ -15,7 +15,8 @@ from .views import (
     TransactionViewSet, 
     BusinessViewSet, 
     GuardianViewSet, 
-    UserRegistrationView
+    UserRegistrationView,
+    CardBalanceView,
 )
 from .tests.test_view import TestView
 
@@ -50,4 +51,5 @@ urlpatterns = [
     path('test-view/', TestView.as_view(), name='banking-test-view'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('cards/balance/', CardBalanceView.as_view(), name='card-balance'),
 ]
