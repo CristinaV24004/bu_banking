@@ -13,23 +13,18 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# We pull from .env, but provide a fallback for local development only
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-dev-fallback')
+NFC_API_KEY = os.environ.get('NFC_API_KEY', '')
+NFC_BANK_ID = os.environ.get('NFC_BANK_ID', '')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# We convert the string 'True'/'False' from .env into a Python boolean
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -39,11 +34,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'banking',
-    #TASK1 Add swagger
     'rest_framework_swagger',
     'drf_yasg',
     'corsheaders',
-    #ENDTASK1
 
 ]
 
@@ -78,10 +71,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'extra_credit_union.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
     'default': {

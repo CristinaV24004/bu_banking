@@ -6,6 +6,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 
+from django.conf import settings
+import requests as http_requests
+
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import (
@@ -355,3 +358,23 @@ class GuardianViewSet(viewsets.GenericViewSet):
         alert.reviewed_at = timezone.now()
         alert.save()
         return Response({'status': alert.status})
+    
+class CardBalanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        api_key = settings.NFC_API_KEY
+        if not api_key:
+            return Response({"error": "Payment network not configured"}, status=503)
+        
+        try:
+            response = http_requests.get(
+                'https://paymentsystem-cards-cf.pages.dev/api/cards/me',
+                headers={'X-API-Key': api_key},
+                timeout=5
+            )
+            return Response(response.json())
+        except http_requests.exceptions.Timeout:
+            return Response({"error": "Payment network timed out"}, status=504)
+        except http_requests.exceptions.RequestException:
+            return Response({"error": "Payment network unreachable"}, status=503)
