@@ -55,20 +55,24 @@ const Navbar = () => {
           </div>
         </Link>
 
-        <div className="hidden md:flex md:items-center md:space-x-6" role="list">
+        <ul className="hidden md:flex md:items-center md:space-x-6 list-none p-0 m-0">
           {links.map((link) => (
-            <NavLink key={link.path} to={link.path} currentPath={location.pathname}>
-              {link.name}
-            </NavLink>
+            <li key={link.path}>
+              <NavLink to={link.path} currentPath={location.pathname}>
+                {link.name}
+              </NavLink>
+            </li>
           ))}
-          <button
-            onClick={handleLogout}
-            className="rounded border border-transparent px-3 py-2 text-sm font-cinzel font-semibold text-[#0D2B55] transition hover:border-[#C9992A] hover:text-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
-            aria-label="Log out of Guardian Vault"
-          >
-            Logout
-          </button>
-        </div>
+          <li>
+            <button
+              onClick={handleLogout}
+              className="rounded border border-transparent px-3 py-2 text-sm font-cinzel font-semibold text-[#0D2B55] transition hover:border-[#C9992A] hover:text-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+              aria-label="Log out of Guardian Vault"
+            >
+              Logout
+            </button>
+          </li>
+        </ul>
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -84,34 +88,36 @@ const Navbar = () => {
       </div>
 
       {mobileMenuOpen && (
-        <div
+        <ul
           id="mobile-menu"
-          className="border-t border-[#A67820] bg-[#EAF0F8] md:hidden"
-          role="list"
+          className="border-t border-[#A67820] bg-[#EAF0F8] md:hidden list-none p-0 m-0"
         >
           <div className="flex flex-col space-y-2 px-4 py-4">
             {links.map((link) => (
-              <MobileNavLink
-                key={link.path}
-                to={link.path}
-                currentPath={location.pathname}
-                onClick={closeMobileMenu}
-              >
-                {link.name}
-              </MobileNavLink>
+              <li key={link.path}>
+                <MobileNavLink
+                  to={link.path}
+                  currentPath={location.pathname}
+                  onClick={closeMobileMenu}
+                >
+                  {link.name}
+                </MobileNavLink>
+              </li>
             ))}
-            <button
-              onClick={() => {
-                closeMobileMenu();
-                handleLogout();
-              }}
-              className="w-full rounded border border-transparent px-3 py-2 text-left text-sm font-cinzel font-semibold text-[#0D2B55] transition hover:border-[#C9992A] hover:text-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
-              aria-label="Log out of Guardian Vault"
-            >
-              Logout
-            </button>
+            <li>
+              <button
+                onClick={() => {
+                  closeMobileMenu();
+                  handleLogout();
+                }}
+                className="w-full rounded border border-transparent px-3 py-2 text-left text-sm font-cinzel font-semibold text-[#0D2B55] transition hover:border-[#C9992A] hover:text-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
+                aria-label="Log out of Guardian Vault"
+              >
+                Logout
+              </button>
+            </li>
           </div>
-        </div>
+        </ul>
       )}
     </nav>
   );

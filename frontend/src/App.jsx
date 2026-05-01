@@ -18,6 +18,7 @@ import GuardianApprovalsPage from './pages/GuardianApprovalsPage';
 import GuardianWhitelistPage from './pages/GuardianWhitelistPage';
 import GuardianLimitsPage from './pages/GuardianLimitsPage';
 import GuardianTransactionsPage from './pages/GuardianTransactionsPage';
+import CardBalancePage from './pages/CardBalancePage';
 
 function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/cards/:card_number" element={<CardBalancePage />} />
 
       {/* Account Holder routes – wrapped in Layout */}
       <Route

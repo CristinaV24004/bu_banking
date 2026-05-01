@@ -140,7 +140,7 @@ const NewPaymentPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-6">
           <Button
             variant="ghost"
@@ -194,24 +194,6 @@ const NewPaymentPage = () => {
                 aria-autocomplete="list"
                 aria-controls="merchant-listbox"
               />
-
-                <input
-                    id="merchantSearch"
-                    type="text"
-                    list="merchant-listbox"
-                    value={merchantSearch}
-                    onChange={(e) => {
-                      setMerchantSearch(e.target.value);
-                      if (selectedBusiness) setSelectedBusiness(null);
-                      const match = allBusinesses.find(biz => biz.name === e.target.value);
-                      if (match) handleSelectBusiness(match);
-                    }}
-                    placeholder="Type at least 2 characters to search..."
-                    className={inputClasses}
-                    disabled={submitting}
-                    aria-required="true"
-                    autoComplete="off"
-                  />
                   <datalist id="merchant-listbox">
                     {filteredBusinesses.map((biz) => (
                       <option key={biz.id} value={biz.name}>
