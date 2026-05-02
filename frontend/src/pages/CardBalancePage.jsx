@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import logoFull from '../assets/gv-logo-simple.png';
+import logoSimple from '../assets/gv-logo-simple.png';
 
 const BANK_ID = '2defecf0-833e-43a5-9d1b-36be1fabc2d5';
 const API_BASE = 'https://paymentsystem-cards-cf.pages.dev/api/cards';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../api/axiosInstance';
 import Card from '../components/ui/Card';
@@ -18,6 +18,8 @@ const GuardianWhitelistPage = () => {
   const [newRule, setNewRule] = useState({ merchant_name: '', category: '', rule_type: 'require_approval' });
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const merchantNameRef = useRef('');
+  const categoryRef = useRef('');
 
   useEffect(() => {
     const fetchAccountHolders = async () => {
@@ -91,11 +93,14 @@ const GuardianWhitelistPage = () => {
   };
 
   const handleAddRule = async () => {
-    if (!newRule.merchant_name.trim()) {
+    const merchantName = merchantNameRef.current?.value?.trim() || '';
+    const category = categoryRef.current?.value?.trim() || '';
+
+    if (!merchantName) {
       setModalError('Merchant name is required');
       return;
     }
-    if (!newRule.category.trim()) {
+    if (!category) {
       setModalError('Category is required');
       return;
     }
@@ -104,14 +109,15 @@ const GuardianWhitelistPage = () => {
     try {
       const response = await axiosInstance.post(
         `/guardian/${selectedAccountHolderId}/whitelist/`,
-        newRule
+        { merchant_name: merchantName, category, rule_type: newRule.rule_type }
       );
       setRules([...rules, response.data]);
       setShowAddModal(false);
       setSuccessMessage('Rule added successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setModalError(err.response?.data?.error || 'Failed to add rule.');
+      const message = err.response?.data?.error || 'Failed to add rule.';
+      setModalError(message);
     } finally {
       setModalLoading(false);
     }
@@ -242,8 +248,8 @@ const GuardianWhitelistPage = () => {
             <input
               id="merchant_name"
               type="text"
-              value={newRule.merchant_name}
-              onChange={(e) => setNewRule({ ...newRule, merchant_name: e.target.value })}
+              defaultValue=""
+              ref={(el) => { if (el) merchantNameRef.current = el; }}
               className={inputClasses}
               aria-required="true"
               autoComplete="off"
@@ -257,8 +263,8 @@ const GuardianWhitelistPage = () => {
             <input
               id="category"
               type="text"
-              value={newRule.category}
-              onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
+              defaultValue=""
+              ref={(el) => { if (el) categoryRef.current = el; }}
               className={inputClasses}
               aria-required="true"
               autoComplete="off"

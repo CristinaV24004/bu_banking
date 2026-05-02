@@ -86,7 +86,6 @@ const NewPaymentPage = () => {
     setShowPendingModal(false);
 
     if (!currentAccount) { setError('No valid account selected.'); return; }
-    if (!selectedBusiness) { setError('Please select a merchant from the list.'); return; }
     if (!amount || !validateAmount(amount)) {
       setError('Please enter a valid amount (positive number with up to 2 decimal places).');
       return;
@@ -98,11 +97,12 @@ const NewPaymentPage = () => {
         transaction_type: 'payment',
         amount: parseFloat(amount).toFixed(2),
         from_account: currentAccount.id,
-        merchant_name: selectedBusiness.name,
+        merchant_name: selectedBusiness ? selectedBusiness.name : merchantSearch,
       };
       const response = await axiosInstance.post('/transactions/', payload);
       if (response.status === 201) {
-        setSuccessMessage(`Payment of £${payload.amount} to ${selectedBusiness.name} was successful.`);
+        const merchantDisplayName = selectedBusiness ? selectedBusiness.name : merchantSearch;
+        setSuccessMessage(`Payment of £${payload.amount} to ${merchantDisplayName} was successful.`);
         setAmount('');
         setSelectedBusiness(null);
         setMerchantSearch('');
@@ -262,7 +262,7 @@ const NewPaymentPage = () => {
               type="submit"
               variant="primary"
               loading={submitting}
-              disabled={submitting || !currentAccount || !selectedBusiness || !amount}
+              disabled={submitting || !currentAccount || (!selectedBusiness && !merchantSearch) || !amount}
               className="w-full"
               aria-label="Submit payment"
             >
