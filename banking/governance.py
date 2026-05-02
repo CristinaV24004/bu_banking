@@ -53,7 +53,7 @@ class PermissionEngine:
     def _check_merchant_rules(self):
         """Gate 2: Merchant Whitelist/Blacklist with Fuzzy Matching (BAJPM-31)."""
         # Fetch all rules for this user to check them one by one
-        rules = MerchantWhitelist.objects.filter(account_holder=self.user)
+        rules = MerchantWhitelist.objects.filter(account_holder=self.user).select_related('account_holder')
         
         # Track the result (defaults to None if no rules match)
         final_decision = None

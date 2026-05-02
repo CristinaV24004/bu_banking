@@ -141,14 +141,6 @@ const AccHolderDashboard = () => {
         <nav className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center" aria-label="Account actions">
           <Button
             variant="primary"
-            onClick={() => navigate('/transactions')}
-            className="w-full sm:w-auto"
-            aria-label="View your transaction history"
-          >
-            View Transactions
-          </Button>
-          <Button
-            variant="primary"
             onClick={() => navigate('/payment/new')}
             className="w-full sm:w-auto"
             aria-label="Make a new payment"
@@ -159,7 +151,7 @@ const AccHolderDashboard = () => {
             variant="primary"
             onClick={() => navigate('/pending')}
             className="w-full sm:w-auto"
-            aria-label="View pending approvals"
+            aria-label="View my transactions"
           >
             Pending Approvals
           </Button>

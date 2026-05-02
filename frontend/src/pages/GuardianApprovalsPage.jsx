@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosInstance } from '../api/axiosInstance';
 import { usePendingPolling } from '../hooks/usePendingPolling';
@@ -9,6 +9,7 @@ import Modal from '../components/ui/Modal';
 
 const GuardianApprovalsPage = () => {
   const navigate = useNavigate();
+  const notesRef = useRef('');
   const { pendingTransactions, loading, error: pollingError } = usePendingPolling();
   const [localTransactions, setLocalTransactions] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
@@ -17,6 +18,7 @@ const GuardianApprovalsPage = () => {
   const [notes, setNotes] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+
 
   useEffect(() => {
     setLocalTransactions(pendingTransactions);
@@ -36,7 +38,7 @@ const GuardianApprovalsPage = () => {
   const closeModal = () => {
     setSelectedTx(null);
     setModalAction(null);
-    setNotes('');
+    if (notesRef.current) notesRef.current.value = '';
     setModalError('');
     setModalLoading(false);
   };
@@ -46,7 +48,7 @@ const GuardianApprovalsPage = () => {
     setModalLoading(true);
     setModalError('');
     const { pending_id } = selectedTx;
-    const payload = { pending_id, notes };
+    const payload = { pending_id, notes: notesRef.current?.value || '' };
     try {
       if (modalAction === 'approve') {
         await axiosInstance.post('/guardian/approve-transaction/', payload);
@@ -194,8 +196,10 @@ const GuardianApprovalsPage = () => {
               <textarea
                 id="notes"
                 rows="3"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                defaultValue=""
+                ref={(el) => {
+                  if (el) notesRef.current = el;
+                }}
                 className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#C9992A] focus:outline-none focus:ring-2 focus:ring-[#C9992A] focus:ring-offset-2"
                 disabled={modalLoading}
                 aria-label="Add notes for this decision"

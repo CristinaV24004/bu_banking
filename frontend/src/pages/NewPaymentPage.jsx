@@ -193,15 +193,28 @@ const NewPaymentPage = () => {
                 aria-required="true"
                 aria-autocomplete="list"
                 aria-controls="merchant-listbox"
+                autoComplete="off"
               />
-                  <datalist id="merchant-listbox">
-                    {filteredBusinesses.map((biz) => (
-                      <option key={biz.id} value={biz.name}>
-                        {biz.category}
-                      </option>
-                    ))}
-                  </datalist>
-
+              {merchantSearch.length >= 2 && filteredBusinesses.length > 0 && !selectedBusiness && (
+                <ul
+                  id="merchant-listbox"
+                  className="mt-1 max-h-48 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg list-none p-0"
+                  aria-label="Matching merchants"
+                >
+                  {filteredBusinesses.map((biz) => (
+                    <li
+                      key={biz.id}
+                      className="cursor-pointer px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      onClick={() => handleSelectBusiness(biz)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSelectBusiness(biz)}
+                      tabIndex={0}
+                    >
+                      <div className="font-medium">{biz.name}</div>
+                      <div className="text-xs text-gray-500">{biz.category}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {merchantSearch.length >= 2 && filteredBusinesses.length === 0 && !selectedBusiness && (
                 <output className="mt-1 text-sm text-gray-500 block">
                   No matching merchants found.
