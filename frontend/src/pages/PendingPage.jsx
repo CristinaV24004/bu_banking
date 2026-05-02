@@ -44,6 +44,22 @@ const PendingPage = () => {
     });
   };
 
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+    };
+    return (
+      <span
+        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusMap[status] || 'bg-gray-100 text-gray-800'}`}
+        aria-label={`Status: ${status}`}
+      >
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -72,7 +88,7 @@ const PendingPage = () => {
           </Button>
         </div>
 
-        <Card title="Pending Approvals">
+        <Card title="My Transactions">
           {error && (
             <div className="mb-4">
               <Alert type="error" message={error} onDismiss={() => setError(null)} />
@@ -85,7 +101,7 @@ const PendingPage = () => {
           ) : (
             <>
               <div className="mb-3 text-sm text-gray-500" aria-live="polite">
-                Total pending: {transactions.length}
+                Total transactions: {transactions.length}
               </div>
               <ul className="space-y-3 list-none p-0" aria-label="Pending transactions">
                 {transactions.map((tx) => (
@@ -104,6 +120,11 @@ const PendingPage = () => {
                       >
                         {formatDate(tx.created_at)}
                       </time>
+                      {tx.guardian_notes && (
+                        <div className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                          <span className="font-medium">Guardian note: </span>{tx.guardian_notes}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center justify-between gap-3 sm:justify-end">
                       <div
@@ -112,12 +133,7 @@ const PendingPage = () => {
                       >
                         {formatCurrency(tx.amount)}
                       </div>
-                      <span
-                        className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
-                        aria-label="Status: Awaiting guardian approval"
-                      >
-                        Awaiting Approval
-                      </span>
+                        {getStatusBadge(tx.status)} 
                     </div>
                   </li>
                 ))}

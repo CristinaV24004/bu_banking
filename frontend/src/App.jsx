@@ -43,18 +43,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/transactions"
-        element={
-          <ProtectedRoute>
-            <RoleRoute requiredRole="account_holder">
-              <Layout>
-                <TransactionsPage />
-              </Layout>
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/payment/new"
         element={
           <ProtectedRoute>

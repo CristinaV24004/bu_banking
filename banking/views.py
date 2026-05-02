@@ -76,12 +76,12 @@ class AccountViewSet(viewsets.ModelViewSet):
             return Account.objects.none()
         if user.is_staff:
             return Account.objects.all()
-        return Account.objects.filter(user=user)
+        return Account.objects.filter(user=user).select_related('user')
 
     @action(detail=True, methods=['get'], url_path='current-balance', url_name='current-balance')
     def current_balance(self, request, pk=None):
         account = self.get_object()
-        txs = Transaction.objects.filter(from_account=account)
+        txs = Transaction.objects.filter(from_account=account).select_related('from_account')
         spent = txs.filter(transaction_type="payment").aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         received = txs.filter(transaction_type="deposit").aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         balance = account.starting_balance + received - spent
@@ -124,7 +124,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_staff:
             return Transaction.objects.all()
-        return Transaction.objects.filter(from_account__user=self.request.user)
+        return Transaction.objects.filter(from_account__user=self.request.user).select_related('from_account', 'from_account__user', 'business')
 
     def perform_create(self, serializer):
         amount = Decimal(str(self.request.data.get('amount', '0')))
@@ -155,7 +155,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         account = Account.objects.get(id=account_id)
         if account.user != request.user and not request.user.is_staff:
             return Response({"error": "Forbidden"}, status=403)
-        transactions = Transaction.objects.filter(from_account=account)
+        transactions = Transaction.objects.filter(from_account=account).select_related('from_account', 'business')
         return Response(self.get_serializer(transactions, many=True).data)
 
     @action(detail=False, methods=['get'], url_path='spending-summary/(?P<account_id>[^/.]+)', url_name='spending-summary')
@@ -214,7 +214,7 @@ class GuardianViewSet(viewsets.GenericViewSet):
     def pending_reviews(self, request):
         profile = self.get_guardian_profile()
         ids = profile.managed_accounts.values_list('id', flat=True)
-        pending = PendingTransaction.objects.filter(account_holder_id__in=ids, status='pending')
+        pending = PendingTransaction.objects.filter(account_holder_id__in=ids, status='pending').select_related('account_holder')
         data = [{'pending_id': str(p.id), 'amount': f"{p.amount:.2f}", 'merchant': p.merchant_name} for p in pending]
         return Response({'pending_transactions': data})
 
@@ -255,7 +255,6 @@ class GuardianViewSet(viewsets.GenericViewSet):
     def my_pending(self, request):
         pending = PendingTransaction.objects.filter(
         account_holder=request.user,
-        status='pending'
     ).order_by('-created_at')
         data = [{
         'pending_id': str(p.id),
@@ -264,6 +263,7 @@ class GuardianViewSet(viewsets.GenericViewSet):
         'created_at': p.created_at.isoformat(),
         'status': p.status,
         'reason_flag': p.reason_flag,
+        'guardian_notes': p.guardian_notes,
         } for p in pending]
         return Response({'pending_transactions': data})
     

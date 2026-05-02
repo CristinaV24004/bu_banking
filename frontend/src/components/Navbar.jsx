@@ -14,9 +14,8 @@ const Navbar = () => {
 
   const accountHolderLinks = [
     { name: 'Dashboard', path: '/dashboard' },
-    { name: 'Transactions', path: '/transactions' },
     { name: 'Make a Payment', path: '/payment/new' },
-    { name: 'Pending Approvals', path: '/pending' },
+    { name: 'My Transactions', path: '/pending' },
   ];
 
   const guardianLinks = [
